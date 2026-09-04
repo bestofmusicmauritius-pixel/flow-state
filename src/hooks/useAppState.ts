@@ -99,7 +99,12 @@ export function useAppState() {
     (
       column: ColumnId,
       title: string,
-      options?: { description?: string; priority?: Priority; dueDate?: string }
+      options?: {
+        description?: string;
+        priority?: Priority;
+        dueDate?: string;
+        dueTime?: string;
+      }
     ) => {
       const trimmed = title.trim();
       if (!trimmed) return;
@@ -113,6 +118,7 @@ export function useAppState() {
           order: nextOrderInColumn(project.cards, column),
           priority: options?.priority,
           dueDate: options?.dueDate,
+          dueTime: options?.dueDate ? options?.dueTime : undefined,
           createdAt: now,
           updatedAt: now,
         };
@@ -130,6 +136,7 @@ export function useAppState() {
         description?: string;
         priority?: Priority | null;
         dueDate?: string | null;
+        dueTime?: string | null;
       }
     ) => {
       updateActiveProject((project) => ({
@@ -145,7 +152,14 @@ export function useAppState() {
                 ...(patch.priority !== undefined
                   ? { priority: patch.priority ?? undefined }
                   : {}),
-                ...(patch.dueDate !== undefined ? { dueDate: patch.dueDate ?? undefined } : {}),
+                ...(patch.dueDate !== undefined
+                  ? {
+                      dueDate: patch.dueDate ?? undefined,
+                      dueTime: patch.dueDate ? (patch.dueTime ?? undefined) : undefined,
+                    }
+                  : patch.dueTime !== undefined
+                    ? { dueTime: patch.dueTime ?? undefined }
+                    : {}),
                 updatedAt: new Date().toISOString(),
               }
             : card
@@ -234,7 +248,10 @@ export function useAppState() {
   );
 
   const updateTodo = useCallback(
-    (id: string, patch: { priority?: Priority | null; dueDate?: string | null }) => {
+    (
+      id: string,
+      patch: { priority?: Priority | null; dueDate?: string | null; dueTime?: string | null }
+    ) => {
       updateActiveProject((project) => ({
         ...project,
         todos: project.todos.map((todo) =>
@@ -244,7 +261,12 @@ export function useAppState() {
                 ...(patch.priority !== undefined
                   ? { priority: patch.priority ?? undefined }
                   : {}),
-                ...(patch.dueDate !== undefined ? { dueDate: patch.dueDate ?? undefined } : {}),
+                ...(patch.dueDate !== undefined
+                  ? {
+                      dueDate: patch.dueDate ?? undefined,
+                      dueTime: patch.dueDate ? (patch.dueTime ?? undefined) : undefined,
+                    }
+                  : {}),
               }
             : todo
         ),

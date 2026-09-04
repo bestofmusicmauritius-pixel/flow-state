@@ -23,6 +23,7 @@ export interface KanbanCard {
   order: number;
   priority?: Priority;
   dueDate?: string;
+  dueTime?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,6 +35,7 @@ export interface TodoItem {
   order: number;
   priority?: Priority;
   dueDate?: string;
+  dueTime?: string;
   createdAt: string;
 }
 

@@ -1,5 +1,6 @@
 import { ProjectSwitcher } from "@/components/project/ProjectSwitcher";
 import { BackupControls } from "@/components/layout/BackupControls";
+import { NotificationControls } from "@/components/layout/NotificationControls";
 
 export function TopBar() {
   return (
@@ -11,7 +12,10 @@ export function TopBar() {
           █
         </span>
       </div>
-      <BackupControls />
+      <div className="flex items-center gap-2">
+        <NotificationControls />
+        <BackupControls />
+      </div>
     </header>
   );
 }

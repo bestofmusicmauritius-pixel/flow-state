@@ -72,7 +72,7 @@ export function TodoList() {
                   onToggle={() => toggleTodo(todo.id)}
                   onDelete={() => deleteTodo(todo.id)}
                   onChangePriority={(priority) => updateTodo(todo.id, { priority })}
-                  onChangeDueDate={(dueDate) => updateTodo(todo.id, { dueDate })}
+                  onChangeDueDate={(dueDate, dueTime) => updateTodo(todo.id, { dueDate, dueTime })}
                 />
               ))}
             </SortableContext>

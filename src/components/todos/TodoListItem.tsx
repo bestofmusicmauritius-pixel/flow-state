@@ -5,7 +5,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
 import { IconButton } from "@/components/ui/IconButton";
-import { getDueUrgency, DUE_COLOR, DUE_LABEL } from "@/lib/dueDate";
+import { getDueUrgency, formatDueDateTime, DUE_COLOR, DUE_LABEL } from "@/lib/dueDate";
 import { PRIORITY_COLOR, PRIORITY_TAG } from "@/lib/priority";
 import { PRIORITIES, type Priority, type TodoItem } from "@/types";
 
@@ -14,7 +14,7 @@ interface TodoListItemProps {
   onToggle: () => void;
   onDelete: () => void;
   onChangePriority: (priority: Priority | null) => void;
-  onChangeDueDate: (dueDate: string | null) => void;
+  onChangeDueDate: (dueDate: string | null, dueTime: string | null) => void;
 }
 
 export function TodoListItem({
@@ -28,14 +28,22 @@ export function TodoListItem({
     id: todo.id,
   });
   const [priorityMenuOpen, setPriorityMenuOpen] = useState(false);
-  const [editingDueDate, setEditingDueDate] = useState(false);
+  const [dueMenuOpen, setDueMenuOpen] = useState(false);
+  const [draftDate, setDraftDate] = useState("");
+  const [draftTime, setDraftTime] = useState("");
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
 
-  const urgency = todo.dueDate ? getDueUrgency(todo.dueDate, todo.done) : null;
+  const urgency = todo.dueDate ? getDueUrgency(todo.dueDate, todo.dueTime, todo.done) : null;
+
+  function openDueMenu() {
+    setDraftDate(todo.dueDate ?? "");
+    setDraftTime(todo.dueTime ?? "");
+    setDueMenuOpen(true);
+  }
 
   return (
     <div
@@ -134,33 +142,69 @@ export function TodoListItem({
           )}
         </div>
 
-        {editingDueDate ? (
-          <input
-            type="date"
-            autoFocus
-            defaultValue={todo.dueDate ?? ""}
-            onBlur={(e) => {
-              onChangeDueDate(e.target.value || null);
-              setEditingDueDate(false);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-              if (e.key === "Escape") setEditingDueDate(false);
-            }}
-            className="bg-bg-base border border-border rounded-sm px-1 py-0.5 text-text-primary font-mono text-[11px]"
-          />
-        ) : (
+        <div className="relative">
           <button
             type="button"
-            onClick={() => setEditingDueDate(true)}
+            onClick={() => (dueMenuOpen ? setDueMenuOpen(false) : openDueMenu())}
             className={clsx(
               urgency ? DUE_COLOR[urgency] : "text-text-faint",
               "hover:opacity-80 transition-opacity"
             )}
           >
-            {urgency && todo.dueDate ? `${DUE_LABEL[urgency]} ${todo.dueDate}` : "+ due"}
+            {urgency && todo.dueDate
+              ? `${DUE_LABEL[urgency]} ${formatDueDateTime(todo.dueDate, todo.dueTime)}`
+              : "+ due"}
           </button>
-        )}
+          {dueMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setDueMenuOpen(false)} />
+              <div className="absolute left-0 top-full mt-1 z-50 flex flex-col gap-1.5 w-56 bg-bg-elevated border border-border-strong rounded-md shadow-[0_0_0_1px_rgba(255,181,69,0.08),0_8px_24px_rgba(0,0,0,0.5)] p-2">
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="date"
+                    autoFocus
+                    value={draftDate}
+                    onChange={(e) => setDraftDate(e.target.value)}
+                    className="bg-bg-base border border-border rounded-sm px-1 py-0.5 text-text-primary font-mono text-[11px] flex-1 min-w-0"
+                  />
+                  {draftDate && (
+                    <input
+                      type="time"
+                      value={draftTime}
+                      onChange={(e) => setDraftTime(e.target.value)}
+                      className="bg-bg-base border border-border rounded-sm px-1 py-0.5 text-text-primary font-mono text-[11px] w-24"
+                    />
+                  )}
+                </div>
+                <div className="flex justify-end gap-1.5">
+                  {todo.dueDate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onChangeDueDate(null, null);
+                        setDueMenuOpen(false);
+                      }}
+                      className="px-1.5 py-0.5 rounded-sm border border-border text-text-faint hover:border-border-strong"
+                    >
+                      clear
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChangeDueDate(draftDate || null, draftTime || null);
+                      setDueMenuOpen(false);
+                    }}
+                    disabled={!draftDate}
+                    className="px-1.5 py-0.5 rounded-sm border border-accent/50 text-accent hover:bg-bg-card disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    set
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

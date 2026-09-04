@@ -22,19 +22,41 @@ function daysUntil(dueDate: string): number {
   return Math.round((due.getTime() - today.getTime()) / 86_400_000);
 }
 
+/** The exact instant a due date/time is reached. Without a time, that's the
+ * end of the due day — so a date-only item stays "today" all day and only
+ * flips to overdue after midnight, rather than the moment the page loads. */
+export function getDueTimestamp(dueDate: string, dueTime?: string): number {
+  const [y, m, d] = dueDate.split("-").map(Number);
+  if (dueTime) {
+    const [hh, mm] = dueTime.split(":").map(Number);
+    return new Date(y, m - 1, d, hh, mm).getTime();
+  }
+  return new Date(y, m - 1, d, 23, 59, 59, 999).getTime();
+}
+
 /** isDone marks a completed card/todo — its due date no longer matters, so it
  * never reads as overdue or urgent. */
-export function getDueUrgency(dueDate: string, isDone: boolean): DueUrgency {
+export function getDueUrgency(dueDate: string, dueTime: string | undefined, isDone: boolean): DueUrgency {
   if (isDone) return "later";
 
+  if (getDueTimestamp(dueDate, dueTime) <= Date.now()) return "overdue";
+
   const diff = daysUntil(dueDate);
-  if (diff < 0) return "overdue";
   if (diff === 0) return "today";
   if (diff === 1) return "tomorrow";
   if (diff <= 7) return "week";
   if (diff <= 14) return "twoWeeks";
   if (diff <= 30) return "month";
   return "later";
+}
+
+/** "2026-09-10" alone, or "2026-09-10 3:00pm" when a time is set. */
+export function formatDueDateTime(dueDate: string, dueTime?: string): string {
+  if (!dueTime) return dueDate;
+  const [hh, mm] = dueTime.split(":").map(Number);
+  const period = hh >= 12 ? "pm" : "am";
+  const hour12 = hh % 12 === 0 ? 12 : hh % 12;
+  return `${dueDate} ${hour12}:${String(mm).padStart(2, "0")}${period}`;
 }
 
 // A hot-to-cold gradient: overdue/today are the reserved alert-red and a hot
@@ -60,9 +82,12 @@ export const DUE_LABEL: Record<DueUrgency, string> = {
   later: "due",
 };
 
-/** Soonest due date first; undated items sort last. */
-export function compareByDueDate(a: { dueDate?: string }, b: { dueDate?: string }): number {
-  const aKey = a.dueDate ?? "9999-99-99";
-  const bKey = b.dueDate ?? "9999-99-99";
-  return aKey < bKey ? -1 : aKey > bKey ? 1 : 0;
+/** Soonest due date/time first; undated items sort last. */
+export function compareByDueDate(
+  a: { dueDate?: string; dueTime?: string },
+  b: { dueDate?: string; dueTime?: string }
+): number {
+  const aKey = a.dueDate ? getDueTimestamp(a.dueDate, a.dueTime) : Infinity;
+  const bKey = b.dueDate ? getDueTimestamp(b.dueDate, b.dueTime) : Infinity;
+  return aKey - bKey;
 }

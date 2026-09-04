@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
-import { getDueUrgency, DUE_COLOR, DUE_LABEL } from "@/lib/dueDate";
+import { getDueUrgency, formatDueDateTime, DUE_COLOR, DUE_LABEL } from "@/lib/dueDate";
 import { formatRelativeTime } from "@/lib/format";
 import { PRIORITY_COLOR, PRIORITY_TAG } from "@/lib/priority";
 import type { KanbanCard as KanbanCardType } from "@/types";
@@ -76,10 +76,10 @@ export function KanbanCard({ card, onClick, draggable = true }: KanbanCardProps)
           )}
           {card.dueDate &&
             (() => {
-              const urgency = getDueUrgency(card.dueDate, card.column === "complete");
+              const urgency = getDueUrgency(card.dueDate, card.dueTime, card.column === "complete");
               return (
                 <p className={clsx("mt-1.5 font-mono text-[11px]", DUE_COLOR[urgency])}>
-                  {DUE_LABEL[urgency]} {card.dueDate}
+                  {DUE_LABEL[urgency]} {formatDueDateTime(card.dueDate, card.dueTime)}
                 </p>
               );
             })()}

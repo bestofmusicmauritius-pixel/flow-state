@@ -14,6 +14,7 @@ export interface CardDialogSubmitValues {
   description: string;
   priority: Priority | null;
   dueDate: string | null;
+  dueTime: string | null;
 }
 
 interface CardDialogProps {
@@ -23,6 +24,7 @@ interface CardDialogProps {
   initialDescription?: string;
   initialPriority?: Priority;
   initialDueDate?: string;
+  initialDueTime?: string;
   onClose: () => void;
   onSubmit: (values: CardDialogSubmitValues) => void;
   onDelete?: () => void;
@@ -35,6 +37,7 @@ export function CardDialog({
   initialDescription = "",
   initialPriority,
   initialDueDate,
+  initialDueTime,
   onClose,
   onSubmit,
   onDelete,
@@ -43,11 +46,18 @@ export function CardDialog({
   const [description, setDescription] = useState(initialDescription);
   const [priority, setPriority] = useState<Priority | null>(initialPriority ?? null);
   const [dueDate, setDueDate] = useState<string>(initialDueDate ?? "");
+  const [dueTime, setDueTime] = useState<string>(initialDueTime ?? "");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-    onSubmit({ title, description, priority, dueDate: dueDate || null });
+    onSubmit({
+      title,
+      description,
+      priority,
+      dueDate: dueDate || null,
+      dueTime: dueDate ? dueTime || null : null,
+    });
     onClose();
   }
 
@@ -113,9 +123,20 @@ export function CardDialog({
               className="w-auto"
             />
             {dueDate && (
+              <Input
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                className="w-auto"
+              />
+            )}
+            {dueDate && (
               <button
                 type="button"
-                onClick={() => setDueDate("")}
+                onClick={() => {
+                  setDueDate("");
+                  setDueTime("");
+                }}
                 className="font-mono text-xs px-2 py-1 rounded-sm border border-border text-text-faint hover:border-border-strong hover:text-text-primary transition-colors"
               >
                 clear
