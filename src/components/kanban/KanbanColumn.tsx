@@ -108,6 +108,9 @@ export function KanbanColumn({
         >
           by due date
         </button>
+        {sortMode === "due" && (
+          <span className="text-text-faint ml-1">— drag disabled while sorted this way</span>
+        )}
       </div>
       <div
         ref={setNodeRef}

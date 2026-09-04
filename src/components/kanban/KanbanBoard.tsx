@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -48,6 +48,7 @@ export function KanbanBoard({
     undoDeleteCard,
     moveCard,
     advanceRecurringCard,
+    replaceCards,
     reorderCards,
     archiveCard,
     archiveCompletedCards,
@@ -70,6 +71,12 @@ export function KanbanBoard({
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  // Snapshot of every card's column/order right before a drag starts. A ref,
+  // not state, since it must survive the onDragOver mutations that happen
+  // mid-drag without itself triggering a re-render — it's only ever read
+  // once the drag actually ends.
+  const dragStartCardsRef = useRef<KanbanCardType[] | null>(null);
 
   useEffect(() => {
     // openCardId is a one-shot external command (from the agenda view), not
@@ -97,6 +104,7 @@ export function KanbanBoard({
   }
 
   const cards = activeProject.cards;
+  const projectId = activeProject.id;
 
   function cardsInColumn(column: ColumnId): KanbanCardType[] {
     return cards.filter((c) => c.column === column).sort((a, b) => a.order - b.order);
@@ -112,6 +120,7 @@ export function KanbanBoard({
   const editingCard = cards.find((c) => c.id === editingCardId) ?? null;
 
   function handleDragStart(event: DragStartEvent) {
+    dragStartCardsRef.current = cards;
     setActiveCardId(event.active.id as string);
   }
 
@@ -135,15 +144,37 @@ export function KanbanBoard({
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     setActiveCardId(null);
+    const snapshot = dragStartCardsRef.current;
+    dragStartCardsRef.current = null;
     if (!over) return;
 
     const draggedCard = cards.find((c) => c.id === active.id);
     if (!draggedCard) return;
 
+    function offerUndo(message: string) {
+      // Cross-column moves and recurrence advances can shift more than one
+      // card's order at once, so undo restores the whole pre-drag snapshot
+      // rather than trying to compute a precise inverse. Deliberately NOT
+      // offered for same-column reordering below — that's low-stakes and
+      // trivially reversible by dragging again, so a toast every time would
+      // just be noise.
+      if (snapshot) showToast(message, () => replaceCards(projectId, snapshot));
+    }
+
     // Only fires on a confirmed drop, not the onDragOver hover-preview above —
     // see advanceRecurringCard's comment for why that distinction matters.
     if (draggedCard.column === "complete" && draggedCard.recurrence && draggedCard.dueDate) {
       advanceRecurringCard(draggedCard.id);
+      offerUndo(`"${draggedCard.title}" completed and rescheduled`);
+      return;
+    }
+
+    const originalColumn = snapshot?.find((c) => c.id === active.id)?.column;
+    if (originalColumn && originalColumn !== draggedCard.column) {
+      // The move itself already happened via onDragOver above, as the user
+      // dragged across the column boundary — this is just the undo offer
+      // for the drop that just confirmed it.
+      offerUndo(`"${draggedCard.title}" moved to ${draggedCard.column}`);
       return;
     }
 

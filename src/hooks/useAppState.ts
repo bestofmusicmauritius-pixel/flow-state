@@ -284,6 +284,16 @@ export function useAppState() {
     [updateActiveProject]
   );
 
+  /** Restores a project's full card list to an earlier snapshot in one step
+   * — the undo half of a cross-column drag or a recurrence-driven advance,
+   * both of which can touch more than one card's order at once. */
+  const replaceCards = useCallback(
+    (projectId: string, cards: KanbanCard[]) => {
+      updateProjectById(projectId, (project) => ({ ...project, cards }));
+    },
+    [updateProjectById]
+  );
+
   const reorderCards = useCallback(
     (column: ColumnId, fromIndex: number, toIndex: number) => {
       updateActiveProject((project) => ({
@@ -608,6 +618,7 @@ export function useAppState() {
     undoDeleteCard,
     moveCard,
     advanceRecurringCard,
+    replaceCards,
     reorderCards,
     archiveCard,
     archiveCompletedCards,
