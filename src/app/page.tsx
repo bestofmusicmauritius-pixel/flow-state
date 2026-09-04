@@ -110,7 +110,7 @@ export default function Home() {
 
   return (
     <main className="h-full flex flex-col">
-      <TopBar view={view} onChangeView={setView} />
+      <TopBar view={view} onChangeView={setView} onOpenPalette={() => setPaletteOpen(true)} />
       {view === "board" && (
         <div className="flex flex-1 min-h-0">
           <KanbanBoard

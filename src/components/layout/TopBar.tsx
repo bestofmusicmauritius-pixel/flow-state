@@ -15,9 +15,10 @@ const VIEWS: { id: View; label: string }[] = [
 interface TopBarProps {
   view: View;
   onChangeView: (view: View) => void;
+  onOpenPalette: () => void;
 }
 
-export function TopBar({ view, onChangeView }: TopBarProps) {
+export function TopBar({ view, onChangeView, onOpenPalette }: TopBarProps) {
   return (
     <header className="h-12 shrink-0 bg-bg-elevated border-b border-border px-4 flex items-center justify-between">
       <div className="flex items-center gap-1 font-mono text-sm">
@@ -28,6 +29,15 @@ export function TopBar({ view, onChangeView }: TopBarProps) {
         </span>
       </div>
       <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onOpenPalette}
+          title="Command palette"
+          className="flex items-center gap-1.5 px-2 py-1 rounded-sm border border-border font-mono text-xs text-text-faint hover:text-text-primary hover:border-border-strong transition-colors"
+        >
+          <span>command</span>
+          <span className="px-1 rounded-sm border border-border-strong text-text-muted">k</span>
+        </button>
         <div className="flex items-center gap-1 font-mono text-xs">
           {VIEWS.map((v) => (
             <button
