@@ -9,14 +9,22 @@ import { Button } from "@/components/ui/Button";
 import { PRIORITY_COLOR, PRIORITY_TAG } from "@/lib/priority";
 import { PRIORITIES, type Priority } from "@/types";
 
+export interface CardDialogSubmitValues {
+  title: string;
+  description: string;
+  priority: Priority | null;
+  dueDate: string | null;
+}
+
 interface CardDialogProps {
   open: boolean;
   mode: "create" | "edit";
   initialTitle?: string;
   initialDescription?: string;
   initialPriority?: Priority;
+  initialDueDate?: string;
   onClose: () => void;
-  onSubmit: (title: string, description: string, priority: Priority | null) => void;
+  onSubmit: (values: CardDialogSubmitValues) => void;
   onDelete?: () => void;
 }
 
@@ -26,6 +34,7 @@ export function CardDialog({
   initialTitle = "",
   initialDescription = "",
   initialPriority,
+  initialDueDate,
   onClose,
   onSubmit,
   onDelete,
@@ -33,11 +42,12 @@ export function CardDialog({
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [priority, setPriority] = useState<Priority | null>(initialPriority ?? null);
+  const [dueDate, setDueDate] = useState<string>(initialDueDate ?? "");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-    onSubmit(title, description, priority);
+    onSubmit({ title, description, priority, dueDate: dueDate || null });
     onClose();
   }
 
@@ -91,6 +101,26 @@ export function CardDialog({
                 {PRIORITY_TAG[p.id]} {p.label}
               </button>
             ))}
+          </div>
+        </div>
+        <div>
+          <p className="font-mono text-xs text-text-faint mb-1.5">{"// due date"}</p>
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-auto"
+            />
+            {dueDate && (
+              <button
+                type="button"
+                onClick={() => setDueDate("")}
+                className="font-mono text-xs px-2 py-1 rounded-sm border border-border text-text-faint hover:border-border-strong hover:text-text-primary transition-colors"
+              >
+                clear
+              </button>
+            )}
           </div>
         </div>
         <div className="flex justify-between items-center mt-2">

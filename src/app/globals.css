@@ -78,6 +78,13 @@ body::after {
   scrollbar-width: thin;
 }
 
+/* The native date-picker glyph renders black by default, invisible against
+   this dark screen — invert it to match the phosphor palette. */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7) sepia(1) saturate(3) hue-rotate(360deg);
+  cursor: pointer;
+}
+
 @keyframes blink {
   0%,
   49% {

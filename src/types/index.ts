@@ -22,6 +22,7 @@ export interface KanbanCard {
   column: ColumnId;
   order: number;
   priority?: Priority;
+  dueDate?: string;
   createdAt: string;
   updatedAt: string;
 }

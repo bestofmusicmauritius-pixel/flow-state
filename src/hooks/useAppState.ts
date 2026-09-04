@@ -96,7 +96,11 @@ export function useAppState() {
   // --- Kanban cards ---
 
   const addCard = useCallback(
-    (column: ColumnId, title: string, description?: string, priority?: Priority) => {
+    (
+      column: ColumnId,
+      title: string,
+      options?: { description?: string; priority?: Priority; dueDate?: string }
+    ) => {
       const trimmed = title.trim();
       if (!trimmed) return;
       updateActiveProject((project) => {
@@ -104,10 +108,11 @@ export function useAppState() {
         const card = {
           id: createId(),
           title: trimmed,
-          description: description?.trim() || undefined,
+          description: options?.description?.trim() || undefined,
           column,
           order: nextOrderInColumn(project.cards, column),
-          priority,
+          priority: options?.priority,
+          dueDate: options?.dueDate,
           createdAt: now,
           updatedAt: now,
         };
@@ -120,7 +125,12 @@ export function useAppState() {
   const updateCard = useCallback(
     (
       cardId: string,
-      patch: { title?: string; description?: string; priority?: Priority | null }
+      patch: {
+        title?: string;
+        description?: string;
+        priority?: Priority | null;
+        dueDate?: string | null;
+      }
     ) => {
       updateActiveProject((project) => ({
         ...project,
@@ -135,6 +145,7 @@ export function useAppState() {
                 ...(patch.priority !== undefined
                   ? { priority: patch.priority ?? undefined }
                   : {}),
+                ...(patch.dueDate !== undefined ? { dueDate: patch.dueDate ?? undefined } : {}),
                 updatedAt: new Date().toISOString(),
               }
             : card

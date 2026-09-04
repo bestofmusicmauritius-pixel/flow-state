@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { getDueUrgency, DUE_COLOR, DUE_LABEL } from "@/lib/dueDate";
 import { formatRelativeTime } from "@/lib/format";
 import { PRIORITY_COLOR, PRIORITY_TAG } from "@/lib/priority";
 import type { KanbanCard as KanbanCardType } from "@/types";
@@ -23,7 +24,16 @@ export function KanbanCardOverlay({ card }: { card: KanbanCardType }) {
             {card.description}
           </p>
         )}
-        <p className="mt-1.5 font-mono text-[11px] text-text-faint">
+        {card.dueDate &&
+          (() => {
+            const urgency = getDueUrgency(card.dueDate, card.column);
+            return (
+              <p className={clsx("mt-1.5 font-mono text-[11px]", DUE_COLOR[urgency])}>
+                {DUE_LABEL[urgency]} {card.dueDate}
+              </p>
+            );
+          })()}
+        <p className="mt-1 font-mono text-[11px] text-text-faint">
           {formatRelativeTime(card.updatedAt)}
         </p>
       </div>

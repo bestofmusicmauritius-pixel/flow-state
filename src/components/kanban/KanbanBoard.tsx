@@ -129,8 +129,14 @@ export function KanbanBoard() {
         open={creatingColumn !== null}
         mode="create"
         onClose={() => setCreatingColumn(null)}
-        onSubmit={(title, description, priority) => {
-          if (creatingColumn) addCard(creatingColumn, title, description, priority ?? undefined);
+        onSubmit={({ title, description, priority, dueDate }) => {
+          if (creatingColumn) {
+            addCard(creatingColumn, title, {
+              description,
+              priority: priority ?? undefined,
+              dueDate: dueDate ?? undefined,
+            });
+          }
         }}
       />
 
@@ -141,9 +147,10 @@ export function KanbanBoard() {
         initialTitle={editingCard?.title}
         initialDescription={editingCard?.description}
         initialPriority={editingCard?.priority}
+        initialDueDate={editingCard?.dueDate}
         onClose={() => setEditingCardId(null)}
-        onSubmit={(title, description, priority) => {
-          if (editingCardId) updateCard(editingCardId, { title, description, priority });
+        onSubmit={({ title, description, priority, dueDate }) => {
+          if (editingCardId) updateCard(editingCardId, { title, description, priority, dueDate });
         }}
         onDelete={() => {
           setDeletingCardId(editingCardId);
