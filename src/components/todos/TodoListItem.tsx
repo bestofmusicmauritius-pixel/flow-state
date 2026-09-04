@@ -1,5 +1,7 @@
 "use client";
 
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
 import { IconButton } from "@/components/ui/IconButton";
 import type { TodoItem } from "@/types";
@@ -11,8 +13,33 @@ interface TodoListItemProps {
 }
 
 export function TodoListItem({ todo, onToggle, onDelete }: TodoListItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: todo.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
   return (
-    <div className="group flex items-start gap-2 py-1 px-1 rounded-sm hover:bg-bg-card">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={clsx(
+        "group flex items-start gap-1 py-1 px-1 rounded-sm hover:bg-bg-card",
+        isDragging && "opacity-30"
+      )}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label="Drag to reorder"
+        className="mt-0.5 shrink-0 w-3 flex items-center justify-center text-text-faint hover:text-accent cursor-grab active:cursor-grabbing font-mono text-xs leading-none"
+      >
+        │
+      </button>
       <button
         type="button"
         onClick={onToggle}
