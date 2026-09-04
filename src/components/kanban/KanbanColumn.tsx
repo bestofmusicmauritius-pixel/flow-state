@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { KanbanCard } from "@/components/kanban/KanbanCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { IconButton } from "@/components/ui/IconButton";
+import { compareByDueDate } from "@/lib/dueDate";
 import type { ColumnId, KanbanCard as KanbanCardType } from "@/types";
 
 const BRACKET: Record<ColumnId, string> = {
@@ -14,17 +15,30 @@ const BRACKET: Record<ColumnId, string> = {
   complete: "[x]",
 };
 
+export type SortMode = "manual" | "due";
+
 interface KanbanColumnProps {
   id: ColumnId;
   title: string;
   cards: KanbanCardType[];
+  sortMode: SortMode;
   onAddCard: () => void;
   onCardClick: (cardId: string) => void;
+  onToggleSortMode: (mode: SortMode) => void;
 }
 
-export function KanbanColumn({ id, title, cards, onAddCard, onCardClick }: KanbanColumnProps) {
+export function KanbanColumn({
+  id,
+  title,
+  cards,
+  sortMode,
+  onAddCard,
+  onCardClick,
+  onToggleSortMode,
+}: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id, data: { type: "column" } });
-  const cardIds = cards.map((c) => c.id);
+  const displayedCards = sortMode === "due" ? [...cards].sort(compareByDueDate) : cards;
+  const cardIds = displayedCards.map((c) => c.id);
 
   return (
     <div className="flex flex-col min-h-0 w-80 shrink-0 bg-bg-elevated/60 rounded-md border border-border">
@@ -38,6 +52,32 @@ export function KanbanColumn({ id, title, cards, onAddCard, onCardClick }: Kanba
           +
         </IconButton>
       </div>
+      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border font-mono text-[11px]">
+        <button
+          type="button"
+          onClick={() => onToggleSortMode("manual")}
+          className={clsx(
+            "px-1.5 py-0.5 rounded-sm transition-colors",
+            sortMode === "manual"
+              ? "text-text-primary bg-bg-card"
+              : "text-text-faint hover:text-text-muted"
+          )}
+        >
+          manual
+        </button>
+        <button
+          type="button"
+          onClick={() => onToggleSortMode("due")}
+          className={clsx(
+            "px-1.5 py-0.5 rounded-sm transition-colors",
+            sortMode === "due"
+              ? "text-text-primary bg-bg-card"
+              : "text-text-faint hover:text-text-muted"
+          )}
+        >
+          by due date
+        </button>
+      </div>
       <div
         ref={setNodeRef}
         className={clsx(
@@ -46,11 +86,16 @@ export function KanbanColumn({ id, title, cards, onAddCard, onCardClick }: Kanba
         )}
       >
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-          {cards.length === 0 ? (
+          {displayedCards.length === 0 ? (
             <EmptyState>$ no cards yet</EmptyState>
           ) : (
-            cards.map((card) => (
-              <KanbanCard key={card.id} card={card} onClick={() => onCardClick(card.id)} />
+            displayedCards.map((card) => (
+              <KanbanCard
+                key={card.id}
+                card={card}
+                onClick={() => onCardClick(card.id)}
+                draggable={sortMode === "manual"}
+              />
             ))
           )}
         </SortableContext>

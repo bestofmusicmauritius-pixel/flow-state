@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useAppStateContext } from "@/context/AppStateContext";
-import { KanbanColumn } from "@/components/kanban/KanbanColumn";
+import { KanbanColumn, type SortMode } from "@/components/kanban/KanbanColumn";
 import { KanbanCardOverlay } from "@/components/kanban/KanbanCardOverlay";
 import { CardDialog } from "@/components/kanban/CardDialog";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -29,6 +29,11 @@ export function KanbanBoard() {
   const [creatingColumn, setCreatingColumn] = useState<ColumnId | null>(null);
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
+  const [sortModes, setSortModes] = useState<Record<ColumnId, SortMode>>({
+    todo: "manual",
+    "in-progress": "manual",
+    complete: "manual",
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -116,8 +121,12 @@ export function KanbanBoard() {
               id={column.id}
               title={column.title}
               cards={cardsInColumn(column.id)}
+              sortMode={sortModes[column.id]}
               onAddCard={() => setCreatingColumn(column.id)}
               onCardClick={(cardId) => setEditingCardId(cardId)}
+              onToggleSortMode={(mode) =>
+                setSortModes((prev) => ({ ...prev, [column.id]: mode }))
+              }
             />
           ))}
         </div>

@@ -233,6 +233,26 @@ export function useAppState() {
     [updateActiveProject]
   );
 
+  const updateTodo = useCallback(
+    (id: string, patch: { priority?: Priority | null; dueDate?: string | null }) => {
+      updateActiveProject((project) => ({
+        ...project,
+        todos: project.todos.map((todo) =>
+          todo.id === id
+            ? {
+                ...todo,
+                ...(patch.priority !== undefined
+                  ? { priority: patch.priority ?? undefined }
+                  : {}),
+                ...(patch.dueDate !== undefined ? { dueDate: patch.dueDate ?? undefined } : {}),
+              }
+            : todo
+        ),
+      }));
+    },
+    [updateActiveProject]
+  );
+
   const reorderTodos = useCallback(
     (fromIndex: number, toIndex: number) => {
       updateActiveProject((project) => {
@@ -274,6 +294,7 @@ export function useAppState() {
     addTodo,
     toggleTodo,
     deleteTodo,
+    updateTodo,
     reorderTodos,
     updateNotes,
   };

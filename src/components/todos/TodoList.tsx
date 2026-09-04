@@ -21,7 +21,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 
 export function TodoList() {
-  const { activeProject, addTodo, toggleTodo, deleteTodo, reorderTodos } = useAppStateContext();
+  const { activeProject, addTodo, toggleTodo, deleteTodo, updateTodo, reorderTodos } =
+    useAppStateContext();
   const [draft, setDraft] = useState("");
 
   const sensors = useSensors(
@@ -70,6 +71,8 @@ export function TodoList() {
                   todo={todo}
                   onToggle={() => toggleTodo(todo.id)}
                   onDelete={() => deleteTodo(todo.id)}
+                  onChangePriority={(priority) => updateTodo(todo.id, { priority })}
+                  onChangeDueDate={(dueDate) => updateTodo(todo.id, { dueDate })}
                 />
               ))}
             </SortableContext>

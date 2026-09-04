@@ -27,6 +27,18 @@
   --color-alert: #e2564a;
   --color-alert-muted: #e2564a26;
 
+  /* Due-date urgency — the one deliberate, bounded exception to the monochrome
+     rule above. A single continuous hot-to-cold hue sweep (red through orange,
+     amber, yellow-green, teal, blue) reads as urgency at a glance and stays
+     harmonious because it's one ordered gradient, not arbitrary discrete colors.
+     Scoped to due-date text only — chrome, borders, and buttons stay monochrome. */
+  --color-due-today: #ea6a3d;
+  --color-due-tomorrow: #e8862f;
+  --color-due-week: #d9a53d;
+  --color-due-two-weeks: #b8c93d;
+  --color-due-month: #4fc98a;
+  --color-due-later: #4f9ecf;
+
   /* Sharp corners — a CRT doesn't round anything */
   --radius-sm: 0.1875rem;
   --radius-md: 0.25rem;

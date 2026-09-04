@@ -32,6 +32,8 @@ export interface TodoItem {
   text: string;
   done: boolean;
   order: number;
+  priority?: Priority;
+  dueDate?: string;
   createdAt: string;
 }
 

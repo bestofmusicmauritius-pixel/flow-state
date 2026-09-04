@@ -26,7 +26,7 @@ export function KanbanCardOverlay({ card }: { card: KanbanCardType }) {
         )}
         {card.dueDate &&
           (() => {
-            const urgency = getDueUrgency(card.dueDate, card.column);
+            const urgency = getDueUrgency(card.dueDate, card.column === "complete");
             return (
               <p className={clsx("mt-1.5 font-mono text-[11px]", DUE_COLOR[urgency])}>
                 {DUE_LABEL[urgency]} {card.dueDate}

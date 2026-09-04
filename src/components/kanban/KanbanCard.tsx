@@ -11,12 +11,14 @@ import type { KanbanCard as KanbanCardType } from "@/types";
 interface KanbanCardProps {
   card: KanbanCardType;
   onClick: () => void;
+  draggable?: boolean;
 }
 
-export function KanbanCard({ card, onClick }: KanbanCardProps) {
+export function KanbanCard({ card, onClick, draggable = true }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: { type: "card", column: card.column },
+    disabled: !draggable,
   });
 
   const style = {
@@ -44,11 +46,17 @@ export function KanbanCard({ card, onClick }: KanbanCardProps) {
       <div className="flex items-stretch">
         <button
           type="button"
-          {...attributes}
-          {...listeners}
+          {...(draggable ? attributes : {})}
+          {...(draggable ? listeners : {})}
           onClick={(e) => e.stopPropagation()}
+          disabled={!draggable}
           aria-label="Drag to reorder"
-          className="shrink-0 w-3 flex items-center justify-center text-text-faint hover:text-accent cursor-grab active:cursor-grabbing font-mono text-sm leading-none"
+          className={clsx(
+            "shrink-0 w-3 flex items-center justify-center font-mono text-sm leading-none",
+            draggable
+              ? "text-text-faint hover:text-accent cursor-grab active:cursor-grabbing"
+              : "text-border-strong cursor-not-allowed"
+          )}
         >
           │
         </button>
@@ -68,7 +76,7 @@ export function KanbanCard({ card, onClick }: KanbanCardProps) {
           )}
           {card.dueDate &&
             (() => {
-              const urgency = getDueUrgency(card.dueDate, card.column);
+              const urgency = getDueUrgency(card.dueDate, card.column === "complete");
               return (
                 <p className={clsx("mt-1.5 font-mono text-[11px]", DUE_COLOR[urgency])}>
                   {DUE_LABEL[urgency]} {card.dueDate}
