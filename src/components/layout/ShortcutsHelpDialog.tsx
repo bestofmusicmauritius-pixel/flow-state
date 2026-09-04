@@ -32,7 +32,7 @@ export function ShortcutsHelpDialog({ open, onClose }: ShortcutsHelpDialogProps)
         {"// shortcuts are ignored while typing in a field"}
       </p>
       <p className="mt-1 font-mono text-xs text-text-faint">
-        {"// quick add: #tag  !p0-!p3  @today/@tomorrow/@mon../@yyyy-mm-dd"}
+        {"// quick add: #tag  !p0-!p3  @today/@tomorrow/@mon../@yyyy-mm-dd  (+ -9am / -14:30 for a time)"}
       </p>
     </Dialog>
   );

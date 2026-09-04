@@ -184,6 +184,7 @@ export function KanbanBoard({
                 addCard(column.id, parsed.title, {
                   priority: parsed.priority ?? undefined,
                   dueDate: parsed.dueDate ?? undefined,
+                  dueTime: parsed.dueTime ?? undefined,
                   tags: parsed.tags,
                 })
               }

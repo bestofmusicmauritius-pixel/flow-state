@@ -58,6 +58,7 @@ export function TodoList() {
     addTodo(parsed.title, {
       priority: parsed.priority ?? undefined,
       dueDate: parsed.dueDate ?? undefined,
+      dueTime: parsed.dueTime ?? undefined,
       tags: parsed.tags,
     });
     setDraft("");
@@ -115,7 +116,7 @@ export function TodoList() {
             setDraft(e.target.value);
             if (error) setError(null);
           }}
-          placeholder="Add a todo... #tag !p1 @tomorrow"
+          placeholder="Add a todo... #tag !p1 @tomorrow-9am"
         />
         {error && <p className="mt-1 font-mono text-[11px] text-alert">{error}</p>}
       </form>

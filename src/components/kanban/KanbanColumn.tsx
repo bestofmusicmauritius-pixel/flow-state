@@ -138,7 +138,7 @@ export function KanbanColumn({
             setDraft(e.target.value);
             if (error) setError(null);
           }}
-          placeholder="+ quick add... #tag !p1 @tomorrow"
+          placeholder="+ quick add... #tag !p1 @tomorrow-9am"
           className="text-xs"
         />
         {error && <p className="mt-1 font-mono text-[11px] text-alert">{error}</p>}
