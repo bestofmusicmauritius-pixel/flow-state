@@ -9,6 +9,7 @@ import { AgendaView } from "@/components/agenda/AgendaView";
 import { SearchView } from "@/components/search/SearchView";
 import { ArchiveView } from "@/components/archive/ArchiveView";
 import { ShortcutsHelpDialog } from "@/components/layout/ShortcutsHelpDialog";
+import { CommandPalette, type PaletteAction } from "@/components/layout/CommandPalette";
 import { ProjectDialog } from "@/components/project/ProjectDialog";
 import { Button } from "@/components/ui/Button";
 import { BackupControls } from "@/components/layout/BackupControls";
@@ -21,6 +22,7 @@ export default function Home() {
   const [pendingOpenCardId, setPendingOpenCardId] = useState<string | null>(null);
   const [pendingCreate, setPendingCreate] = useState(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useKeyboardShortcuts({
     "/": () => setView("search"),
@@ -30,8 +32,45 @@ export default function Home() {
       setView("board");
       setPendingCreate(true);
     },
+    k: () => setPaletteOpen(true),
     "?": () => setShowShortcutsHelp(true),
   });
+
+  const paletteActions: PaletteAction[] = [
+    { id: "view-board", label: "Go to board", hint: "b", run: () => setView("board") },
+    { id: "view-agenda", label: "Go to agenda", hint: "a", run: () => setView("agenda") },
+    { id: "view-search", label: "Go to search", hint: "/", run: () => setView("search") },
+    { id: "view-archive", label: "Go to archive", run: () => setView("archive") },
+    {
+      id: "new-task",
+      label: "New task",
+      hint: "n",
+      run: () => {
+        setView("board");
+        setPendingCreate(true);
+      },
+    },
+    {
+      id: "new-project",
+      label: "New project",
+      run: () => setCreateOpen(true),
+    },
+    {
+      id: "shortcuts",
+      label: "Show keyboard shortcuts",
+      hint: "?",
+      run: () => setShowShortcutsHelp(true),
+    },
+    ...state.projects.map((project) => ({
+      id: `project-${project.id}`,
+      label: `Switch to project: ${project.name}`,
+      hint: project.id === activeProject?.id ? "current" : undefined,
+      run: () => {
+        setActiveProject(project.id);
+        setView("board");
+      },
+    })),
+  ];
 
   if (state.projects.length === 0) {
     return (
@@ -52,6 +91,12 @@ export default function Home() {
         <ShortcutsHelpDialog
           open={showShortcutsHelp}
           onClose={() => setShowShortcutsHelp(false)}
+        />
+        <CommandPalette
+          key={paletteOpen ? "palette-open" : "palette-closed"}
+          open={paletteOpen}
+          onClose={() => setPaletteOpen(false)}
+          actions={paletteActions}
         />
       </main>
     );
@@ -81,6 +126,19 @@ export default function Home() {
       {view === "search" && <SearchView onJumpToItem={jumpToItem} />}
       {view === "archive" && <ArchiveView />}
       <ShortcutsHelpDialog open={showShortcutsHelp} onClose={() => setShowShortcutsHelp(false)} />
+      <CommandPalette
+        key={paletteOpen ? "palette-open" : "palette-closed"}
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        actions={paletteActions}
+      />
+      <ProjectDialog
+        key={createOpen ? "create-open" : "create-closed"}
+        open={createOpen}
+        mode="create"
+        onClose={() => setCreateOpen(false)}
+        onSubmit={(name) => createProject(name)}
+      />
     </main>
   );
 }

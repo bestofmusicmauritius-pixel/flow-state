@@ -7,6 +7,7 @@ const SHORTCUTS: { key: string; description: string }[] = [
   { key: "b", description: "board view" },
   { key: "a", description: "agenda view" },
   { key: "n", description: "new task (on the board view)" },
+  { key: "k", description: "command palette" },
   { key: "?", description: "show this help" },
   { key: "esc", description: "close a dialog" },
 ];
@@ -29,6 +30,9 @@ export function ShortcutsHelpDialog({ open, onClose }: ShortcutsHelpDialogProps)
       </div>
       <p className="mt-4 font-mono text-xs text-text-faint">
         {"// shortcuts are ignored while typing in a field"}
+      </p>
+      <p className="mt-1 font-mono text-xs text-text-faint">
+        {"// quick add: #tag  !p0-!p3  @today/@tomorrow/@mon../@yyyy-mm-dd"}
       </p>
     </Dialog>
   );
