@@ -32,6 +32,12 @@ function saveNotified(notified: Set<string>) {
  *
  * Each (item, dueDate, dueTime) triple notifies at most once; changing the
  * due date/time on an item naturally re-arms it, since that's a new key.
+ *
+ * requireInteraction keeps the notification on screen until dismissed
+ * instead of auto-hiding after a few seconds (Chrome/Edge on Windows and
+ * Linux honor this; macOS Notification Center ignores the flag but already
+ * keeps notifications until dismissed by default, so behavior there is
+ * unaffected either way).
  */
 export function useDueNotifications(state: AppState, enabled: boolean) {
   const notifiedRef = useRef<Set<string> | null>(null);
@@ -53,6 +59,7 @@ export function useDueNotifications(state: AppState, enabled: boolean) {
           const notification = new Notification(card.title, {
             body: `${project.name} — due now`,
             tag: key,
+            requireInteraction: true,
           });
           notification.onclick = () => window.focus();
           notified.add(key);
@@ -65,6 +72,7 @@ export function useDueNotifications(state: AppState, enabled: boolean) {
           const notification = new Notification(todo.text, {
             body: `${project.name} — due now`,
             tag: key,
+            requireInteraction: true,
           });
           notification.onclick = () => window.focus();
           notified.add(key);
