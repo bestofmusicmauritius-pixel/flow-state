@@ -5,6 +5,7 @@ import { createId } from "@/lib/id";
 import { moveCardToColumn, nextOrderInColumn, reorderCardsInColumn } from "@/lib/reorder";
 import { createEmptyProject, seedState } from "@/lib/seed";
 import { localStorageStore } from "@/lib/storage";
+import { projectHasTag } from "@/lib/tags";
 import type { AppState, ColumnId, KanbanCard, Priority, Project, TodoItem } from "@/types";
 
 export function useAppState() {
@@ -461,6 +462,56 @@ export function useAppState() {
     [updateActiveProject]
   );
 
+  // --- Tags (global — a tag isn't scoped to one project) ---
+
+  const renameTagEverywhere = useCallback((oldTag: string, newTag: string) => {
+    if (!newTag || oldTag === newTag) return;
+    setState((prev) => {
+      const now = new Date().toISOString();
+      const remap = (tags?: string[]) =>
+        tags?.includes(oldTag)
+          ? [...new Set(tags.map((t) => (t === oldTag ? newTag : t)))]
+          : tags;
+      return {
+        ...prev,
+        projects: prev.projects.map((project) => {
+          if (!projectHasTag(project, oldTag)) return project;
+          return {
+            ...project,
+            cards: project.cards.map((c) => ({ ...c, tags: remap(c.tags) })),
+            archivedCards: project.archivedCards.map((c) => ({ ...c, tags: remap(c.tags) })),
+            todos: project.todos.map((t) => ({ ...t, tags: remap(t.tags) })),
+            updatedAt: now,
+          };
+        }),
+      };
+    });
+  }, []);
+
+  const deleteTagEverywhere = useCallback((tag: string) => {
+    setState((prev) => {
+      const now = new Date().toISOString();
+      const remap = (tags?: string[]) => {
+        if (!tags?.includes(tag)) return tags;
+        const filtered = tags.filter((t) => t !== tag);
+        return filtered.length ? filtered : undefined;
+      };
+      return {
+        ...prev,
+        projects: prev.projects.map((project) => {
+          if (!projectHasTag(project, tag)) return project;
+          return {
+            ...project,
+            cards: project.cards.map((c) => ({ ...c, tags: remap(c.tags) })),
+            archivedCards: project.archivedCards.map((c) => ({ ...c, tags: remap(c.tags) })),
+            todos: project.todos.map((t) => ({ ...t, tags: remap(t.tags) })),
+            updatedAt: now,
+          };
+        }),
+      };
+    });
+  }, []);
+
   return {
     state,
     activeProject,
@@ -489,6 +540,8 @@ export function useAppState() {
     updateTodo,
     reorderTodos,
     updateNotes,
+    renameTagEverywhere,
+    deleteTagEverywhere,
   };
 }
 

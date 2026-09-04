@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import clsx from "clsx";
 import { useAppStateContext } from "@/context/AppStateContext";
 import { ArchivedCardRow } from "@/components/archive/ArchivedCardRow";
+import { TagChip } from "@/components/search/TagChip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import { formatDueDateTime } from "@/lib/dueDate";
@@ -182,14 +183,7 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
               <p className="font-mono text-xs text-text-faint mb-2">{"// browse by tag"}</p>
               <div className="flex flex-wrap gap-1.5">
                 {allTags.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => setQuery(`#${tag}`)}
-                    className="font-mono text-xs px-1.5 py-0.5 rounded-sm border border-border text-text-muted hover:border-border-strong hover:text-text-primary transition-colors"
-                  >
-                    #{tag}
-                  </button>
+                  <TagChip key={tag} tag={tag} onSelect={(t) => setQuery(`#${t}`)} />
                 ))}
               </div>
             </div>

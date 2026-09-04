@@ -1,4 +1,4 @@
-import type { AppState } from "@/types";
+import type { AppState, Project } from "@/types";
 
 /** Lowercase, trimmed, spaces collapsed to dashes, and a leading "#" (people
  * naturally type one, since that's how tags are always displayed) stripped —
@@ -27,4 +27,12 @@ export function getAllTags(state: AppState): string[] {
     for (const todo of project.todos) todo.tags?.forEach((tag) => set.add(tag));
   }
   return [...set].sort();
+}
+
+export function projectHasTag(project: Project, tag: string): boolean {
+  return (
+    project.cards.some((c) => c.tags?.includes(tag)) ||
+    project.archivedCards.some((c) => c.tags?.includes(tag)) ||
+    project.todos.some((t) => t.tags?.includes(tag))
+  );
 }
