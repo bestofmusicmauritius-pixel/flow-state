@@ -34,6 +34,7 @@ export function TodoList() {
   } = useAppStateContext();
   const { showToast } = useToast();
   const [draft, setDraft] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -49,7 +50,11 @@ export function TodoList() {
     e.preventDefault();
     if (!draft.trim()) return;
     const parsed = parseQuickAdd(draft);
-    if (!parsed.title) return;
+    if (!parsed.title) {
+      setError("needs some plain text as the title, not just #tags/!priority/@date");
+      return;
+    }
+    setError(null);
     addTodo(parsed.title, {
       priority: parsed.priority ?? undefined,
       dueDate: parsed.dueDate ?? undefined,
@@ -106,9 +111,13 @@ export function TodoList() {
       <form onSubmit={handleSubmit} className="px-3 py-2 border-t border-border">
         <Input
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            if (error) setError(null);
+          }}
           placeholder="Add a todo... #tag !p1 @tomorrow"
         />
+        {error && <p className="mt-1 font-mono text-[11px] text-alert">{error}</p>}
       </form>
     </div>
   );

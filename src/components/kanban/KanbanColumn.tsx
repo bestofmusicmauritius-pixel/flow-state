@@ -39,6 +39,7 @@ export function KanbanColumn({
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id, data: { type: "column" } });
   const [draft, setDraft] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const displayedCards = sortMode === "due" ? [...cards].sort(compareByDueDate) : cards;
   const cardIds = displayedCards.map((c) => c.id);
 
@@ -46,7 +47,14 @@ export function KanbanColumn({
     e.preventDefault();
     if (!draft.trim()) return;
     const parsed = parseQuickAdd(draft);
-    if (!parsed.title) return;
+    if (!parsed.title) {
+      // e.g. the whole input was just "#tag" or "!p1" — consumed entirely as
+      // structured fields, leaving nothing to use as the title. Silently
+      // doing nothing here was the actual bug; a task needs a title.
+      setError("needs some plain text as the title, not just #tags/!priority/@date");
+      return;
+    }
+    setError(null);
     onQuickAdd(parsed);
     setDraft("");
   }
@@ -126,10 +134,14 @@ export function KanbanColumn({
       <form onSubmit={handleQuickAdd} className="px-2 py-2 border-t border-border">
         <Input
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            if (error) setError(null);
+          }}
           placeholder="+ quick add... #tag !p1 @tomorrow"
           className="text-xs"
         />
+        {error && <p className="mt-1 font-mono text-[11px] text-alert">{error}</p>}
       </form>
     </div>
   );
