@@ -30,6 +30,19 @@ export function isValidAppState(value: unknown): value is AppState {
   );
 }
 
+/** Backfills fields added after data may already have been saved (e.g.
+ * archivedCards), so older localStorage saves and imported backups both
+ * work without every read site needing a defensive `?? []`. */
+export function normalizeAppState(state: AppState): AppState {
+  return {
+    ...state,
+    projects: state.projects.map((project) => ({
+      ...project,
+      archivedCards: Array.isArray(project.archivedCards) ? project.archivedCards : [],
+    })),
+  };
+}
+
 export const localStorageStore: DataStore = {
   load() {
     if (typeof window === "undefined") return seedState();
@@ -38,7 +51,7 @@ export const localStorageStore: DataStore = {
       if (!raw) return seedState();
       const parsed = JSON.parse(raw);
       if (!isValidAppState(parsed)) return seedState();
-      return parsed;
+      return normalizeAppState(parsed);
     } catch {
       return seedState();
     }

@@ -19,6 +19,7 @@ interface KanbanColumnProps {
   onAddCard: () => void;
   onCardClick: (cardId: string) => void;
   onToggleSortMode: (mode: SortMode) => void;
+  onArchiveCompleted?: () => void;
 }
 
 export function KanbanColumn({
@@ -29,6 +30,7 @@ export function KanbanColumn({
   onAddCard,
   onCardClick,
   onToggleSortMode,
+  onArchiveCompleted,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id, data: { type: "column" } });
   const displayedCards = sortMode === "due" ? [...cards].sort(compareByDueDate) : cards;
@@ -42,9 +44,21 @@ export function KanbanColumn({
           <span className="text-text-primary">{title}</span>
           <span className="text-text-faint text-xs">({cards.length})</span>
         </div>
-        <IconButton aria-label={`Add task to ${title}`} onClick={onAddCard}>
-          +
-        </IconButton>
+        <div className="flex items-center gap-1">
+          {onArchiveCompleted && (
+            <button
+              type="button"
+              onClick={onArchiveCompleted}
+              disabled={cards.length === 0}
+              className="font-mono text-[11px] px-1.5 py-0.5 rounded-sm text-text-faint hover:text-text-primary hover:bg-bg-card transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            >
+              archive
+            </button>
+          )}
+          <IconButton aria-label={`Add task to ${title}`} onClick={onAddCard}>
+            +
+          </IconButton>
+        </div>
       </div>
       <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border font-mono text-[11px]">
         <button

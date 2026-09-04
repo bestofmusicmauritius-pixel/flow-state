@@ -9,6 +9,7 @@ export function createEmptyProject(name: string): Project {
     createdAt: now,
     updatedAt: now,
     cards: [],
+    archivedCards: [],
     todos: [],
     notes: "",
   };

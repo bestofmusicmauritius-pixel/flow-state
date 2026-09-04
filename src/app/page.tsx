@@ -6,6 +6,7 @@ import { TopBar, type View } from "@/components/layout/TopBar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { AgendaView } from "@/components/agenda/AgendaView";
+import { SearchView } from "@/components/search/SearchView";
 import { ProjectDialog } from "@/components/project/ProjectDialog";
 import { Button } from "@/components/ui/Button";
 import { BackupControls } from "@/components/layout/BackupControls";
@@ -36,10 +37,16 @@ export default function Home() {
     );
   }
 
+  function jumpToItem(projectId: string, cardId: string | null) {
+    setActiveProject(projectId);
+    setPendingOpenCardId(cardId);
+    setView("board");
+  }
+
   return (
     <main className="h-full flex flex-col">
       <TopBar view={view} onChangeView={setView} />
-      {view === "board" ? (
+      {view === "board" && (
         <div className="flex flex-1 min-h-0">
           <KanbanBoard
             openCardId={pendingOpenCardId}
@@ -47,15 +54,9 @@ export default function Home() {
           />
           {activeProject && <Sidebar />}
         </div>
-      ) : (
-        <AgendaView
-          onJumpToItem={(projectId, cardId) => {
-            setActiveProject(projectId);
-            setPendingOpenCardId(cardId);
-            setView("board");
-          }}
-        />
       )}
+      {view === "agenda" && <AgendaView onJumpToItem={jumpToItem} />}
+      {view === "search" && <SearchView onJumpToItem={jumpToItem} />}
     </main>
   );
 }

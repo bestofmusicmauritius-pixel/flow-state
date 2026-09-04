@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useAppStateContext } from "@/context/AppStateContext";
-import { isValidAppState } from "@/lib/storage";
+import { isValidAppState, normalizeAppState } from "@/lib/storage";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { AppState } from "@/types";
 
@@ -43,7 +43,7 @@ export function BackupControls({ showExport = true }: { showExport?: boolean }) 
           setError("that file doesn't look like a flow-state backup");
           return;
         }
-        setPendingImport(parsed);
+        setPendingImport(normalizeAppState(parsed));
       })
       .catch(() => setError("couldn't read that file as json"));
   }

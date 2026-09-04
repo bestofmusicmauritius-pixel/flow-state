@@ -30,12 +30,20 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ openCardId, onCardOpened }: KanbanBoardProps) {
-  const { activeProject, addCard, updateCard, deleteCard, moveCard, reorderCards } =
-    useAppStateContext();
+  const {
+    activeProject,
+    addCard,
+    updateCard,
+    deleteCard,
+    moveCard,
+    reorderCards,
+    archiveCompletedCards,
+  } = useAppStateContext();
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [creatingColumn, setCreatingColumn] = useState<ColumnId | null>(null);
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
+  const [confirmingArchiveComplete, setConfirmingArchiveComplete] = useState(false);
   const [sortModes, setSortModes] = useState<Record<ColumnId, SortMode>>({
     todo: "manual",
     "in-progress": "manual",
@@ -144,6 +152,9 @@ export function KanbanBoard({ openCardId, onCardOpened }: KanbanBoardProps) {
               onToggleSortMode={(mode) =>
                 setSortModes((prev) => ({ ...prev, [column.id]: mode }))
               }
+              onArchiveCompleted={
+                column.id === "complete" ? () => setConfirmingArchiveComplete(true) : undefined
+              }
             />
           ))}
         </div>
@@ -197,6 +208,18 @@ export function KanbanBoard({ openCardId, onCardOpened }: KanbanBoardProps) {
           setDeletingCardId(null);
         }}
         onCancel={() => setDeletingCardId(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmingArchiveComplete}
+        title="Archive Completed"
+        message="Move every card in Complete to the archive? You can restore them later from search."
+        confirmLabel="Archive"
+        onConfirm={() => {
+          archiveCompletedCards(activeProject.id);
+          setConfirmingArchiveComplete(false);
+        }}
+        onCancel={() => setConfirmingArchiveComplete(false)}
       />
     </div>
   );

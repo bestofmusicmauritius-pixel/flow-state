@@ -46,6 +46,24 @@ export function useAppState() {
     });
   }, []);
 
+  // Like updateActiveProject, but targets any project by id — needed for
+  // archive/restore, which can be triggered from cross-project views
+  // (search, agenda) where the target project isn't necessarily active.
+  const updateProjectById = useCallback(
+    (projectId: string, updater: (project: Project) => Project) => {
+      setState((prev) => {
+        const now = new Date().toISOString();
+        return {
+          ...prev,
+          projects: prev.projects.map((project) =>
+            project.id === projectId ? { ...updater(project), updatedAt: now } : project
+          ),
+        };
+      });
+    },
+    []
+  );
+
   // --- Projects ---
 
   const createProject = useCallback((name: string) => {
@@ -199,6 +217,74 @@ export function useAppState() {
     [updateActiveProject]
   );
 
+  // --- Archive ---
+
+  const archiveCard = useCallback(
+    (projectId: string, cardId: string) => {
+      updateProjectById(projectId, (project) => {
+        const card = project.cards.find((c) => c.id === cardId);
+        if (!card) return project;
+        return {
+          ...project,
+          cards: project.cards.filter((c) => c.id !== cardId),
+          archivedCards: [
+            ...project.archivedCards,
+            { ...card, archivedAt: new Date().toISOString() },
+          ],
+        };
+      });
+    },
+    [updateProjectById]
+  );
+
+  const archiveCompletedCards = useCallback(
+    (projectId: string) => {
+      updateProjectById(projectId, (project) => {
+        const toArchive = project.cards.filter((c) => c.column === "complete");
+        if (toArchive.length === 0) return project;
+        const now = new Date().toISOString();
+        return {
+          ...project,
+          cards: project.cards.filter((c) => c.column !== "complete"),
+          archivedCards: [
+            ...project.archivedCards,
+            ...toArchive.map((c) => ({ ...c, archivedAt: now })),
+          ],
+        };
+      });
+    },
+    [updateProjectById]
+  );
+
+  const restoreCard = useCallback(
+    (projectId: string, cardId: string) => {
+      updateProjectById(projectId, (project) => {
+        const card = project.archivedCards.find((c) => c.id === cardId);
+        if (!card) return project;
+        const restored = { ...card, archivedAt: undefined };
+        return {
+          ...project,
+          archivedCards: project.archivedCards.filter((c) => c.id !== cardId),
+          cards: [
+            ...project.cards,
+            { ...restored, order: nextOrderInColumn(project.cards, restored.column) },
+          ],
+        };
+      });
+    },
+    [updateProjectById]
+  );
+
+  const deleteArchivedCard = useCallback(
+    (projectId: string, cardId: string) => {
+      updateProjectById(projectId, (project) => ({
+        ...project,
+        archivedCards: project.archivedCards.filter((c) => c.id !== cardId),
+      }));
+    },
+    [updateProjectById]
+  );
+
   // --- Todos ---
 
   const addTodo = useCallback(
@@ -313,6 +399,10 @@ export function useAppState() {
     deleteCard,
     moveCard,
     reorderCards,
+    archiveCard,
+    archiveCompletedCards,
+    restoreCard,
+    deleteArchivedCard,
     addTodo,
     toggleTodo,
     deleteTodo,

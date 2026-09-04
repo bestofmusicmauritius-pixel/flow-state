@@ -32,6 +32,7 @@ export interface KanbanCard {
   dueTime?: string;
   createdAt: string;
   updatedAt: string;
+  archivedAt?: string;
 }
 
 export interface TodoItem {
@@ -51,6 +52,7 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   cards: KanbanCard[];
+  archivedCards: KanbanCard[];
   todos: TodoItem[];
   notes: string;
 }
