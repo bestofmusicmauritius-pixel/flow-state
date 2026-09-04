@@ -1,7 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import clsx from "clsx";
 import { ProjectSwitcher } from "@/components/project/ProjectSwitcher";
-import { BackupControls } from "@/components/layout/BackupControls";
-import { NotificationControls } from "@/components/layout/NotificationControls";
+import { SettingsDialog } from "@/components/layout/SettingsDialog";
 
 export type View = "board" | "agenda" | "search" | "archive";
 
@@ -19,6 +21,8 @@ interface TopBarProps {
 }
 
 export function TopBar({ view, onChangeView, onOpenPalette }: TopBarProps) {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   return (
     <header className="h-12 shrink-0 bg-bg-elevated border-b border-border px-4 flex items-center justify-between">
       <div className="flex items-center gap-1 font-mono text-sm">
@@ -55,9 +59,15 @@ export function TopBar({ view, onChangeView, onOpenPalette }: TopBarProps) {
             </button>
           ))}
         </div>
-        <NotificationControls />
-        <BackupControls />
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="px-1.5 py-1 rounded-sm font-mono text-xs text-text-faint hover:text-text-primary hover:bg-bg-card transition-colors"
+        >
+          [settings]
+        </button>
       </div>
+      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </header>
   );
 }

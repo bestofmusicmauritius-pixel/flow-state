@@ -119,8 +119,10 @@ export function NotificationControls() {
         </button>
         {digestMenuOpen && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setDigestMenuOpen(false)} />
-            <div className="absolute right-0 top-full mt-1 z-50 flex flex-col gap-1.5 w-52 bg-bg-elevated border border-border-strong rounded-md shadow-[0_0_0_1px_rgba(255,181,69,0.08),0_8px_24px_rgba(0,0,0,0.5)] p-2">
+            {/* z-index bumped above Dialog's z-50: this popover is nested
+                inside the settings dialog, and needs to layer above it. */}
+            <div className="fixed inset-0 z-[60]" onClick={() => setDigestMenuOpen(false)} />
+            <div className="absolute right-0 top-full mt-1 z-[70] flex flex-col gap-1.5 w-52 bg-bg-elevated border border-border-strong rounded-md shadow-[0_0_0_1px_rgba(255,181,69,0.08),0_8px_24px_rgba(0,0,0,0.5)] p-2">
               <p className="font-mono text-[11px] text-text-faint">
                 {"// notify once a day at:"}
               </p>
