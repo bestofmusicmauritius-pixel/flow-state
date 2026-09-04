@@ -129,8 +129,8 @@ export function KanbanBoard() {
         open={creatingColumn !== null}
         mode="create"
         onClose={() => setCreatingColumn(null)}
-        onSubmit={(title, description) => {
-          if (creatingColumn) addCard(creatingColumn, title, description);
+        onSubmit={(title, description, priority) => {
+          if (creatingColumn) addCard(creatingColumn, title, description, priority ?? undefined);
         }}
       />
 
@@ -140,9 +140,10 @@ export function KanbanBoard() {
         mode="edit"
         initialTitle={editingCard?.title}
         initialDescription={editingCard?.description}
+        initialPriority={editingCard?.priority}
         onClose={() => setEditingCardId(null)}
-        onSubmit={(title, description) => {
-          if (editingCardId) updateCard(editingCardId, { title, description });
+        onSubmit={(title, description, priority) => {
+          if (editingCardId) updateCard(editingCardId, { title, description, priority });
         }}
         onDelete={() => {
           setDeletingCardId(editingCardId);

@@ -6,12 +6,22 @@ export const COLUMNS: { id: ColumnId; title: string }[] = [
   { id: "complete", title: "complete" },
 ];
 
+export type Priority = "p0" | "p1" | "p2" | "p3";
+
+export const PRIORITIES: { id: Priority; label: string }[] = [
+  { id: "p0", label: "critical" },
+  { id: "p1", label: "high" },
+  { id: "p2", label: "medium" },
+  { id: "p3", label: "low" },
+];
+
 export interface KanbanCard {
   id: string;
   title: string;
   description?: string;
   column: ColumnId;
   order: number;
+  priority?: Priority;
   createdAt: string;
   updatedAt: string;
 }

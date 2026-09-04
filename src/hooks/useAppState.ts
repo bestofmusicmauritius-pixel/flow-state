@@ -5,7 +5,7 @@ import { createId } from "@/lib/id";
 import { moveCardToColumn, nextOrderInColumn, reorderCardsInColumn } from "@/lib/reorder";
 import { createEmptyProject, seedState } from "@/lib/seed";
 import { localStorageStore } from "@/lib/storage";
-import type { AppState, ColumnId, Project } from "@/types";
+import type { AppState, ColumnId, Priority, Project } from "@/types";
 
 export function useAppState() {
   const [state, setState] = useState<AppState>(seedState);
@@ -87,7 +87,7 @@ export function useAppState() {
   // --- Kanban cards ---
 
   const addCard = useCallback(
-    (column: ColumnId, title: string, description?: string) => {
+    (column: ColumnId, title: string, description?: string, priority?: Priority) => {
       const trimmed = title.trim();
       if (!trimmed) return;
       updateActiveProject((project) => {
@@ -98,6 +98,7 @@ export function useAppState() {
           description: description?.trim() || undefined,
           column,
           order: nextOrderInColumn(project.cards, column),
+          priority,
           createdAt: now,
           updatedAt: now,
         };
@@ -108,7 +109,10 @@ export function useAppState() {
   );
 
   const updateCard = useCallback(
-    (cardId: string, patch: { title?: string; description?: string }) => {
+    (
+      cardId: string,
+      patch: { title?: string; description?: string; priority?: Priority | null }
+    ) => {
       updateActiveProject((project) => ({
         ...project,
         cards: project.cards.map((card) =>
@@ -118,6 +122,9 @@ export function useAppState() {
                 ...(patch.title !== undefined ? { title: patch.title.trim() || card.title } : {}),
                 ...(patch.description !== undefined
                   ? { description: patch.description.trim() || undefined }
+                  : {}),
+                ...(patch.priority !== undefined
+                  ? { priority: patch.priority ?? undefined }
                   : {}),
                 updatedAt: new Date().toISOString(),
               }
