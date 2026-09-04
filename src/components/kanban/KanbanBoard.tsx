@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -22,7 +22,14 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { COLUMNS, type ColumnId, type KanbanCard as KanbanCardType } from "@/types";
 
-export function KanbanBoard() {
+interface KanbanBoardProps {
+  /** Deep-link request from elsewhere (e.g. the agenda view) to open a
+   * specific card's edit dialog once its project becomes active. */
+  openCardId?: string | null;
+  onCardOpened?: () => void;
+}
+
+export function KanbanBoard({ openCardId, onCardOpened }: KanbanBoardProps) {
   const { activeProject, addCard, updateCard, deleteCard, moveCard, reorderCards } =
     useAppStateContext();
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
@@ -39,6 +46,16 @@ export function KanbanBoard() {
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  useEffect(() => {
+    // openCardId is a one-shot external command (from the agenda view), not
+    // derived state — editingCardId also changes independently from card
+    // clicks, so it can't be replaced by deriving from props during render.
+    if (!openCardId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEditingCardId(openCardId);
+    onCardOpened?.();
+  }, [openCardId, onCardOpened]);
 
   if (!activeProject) {
     return (

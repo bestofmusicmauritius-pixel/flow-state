@@ -14,6 +14,7 @@ export default function Home() {
   const { state, activeProject, createProject, setActiveProject } = useAppStateContext();
   const [createOpen, setCreateOpen] = useState(false);
   const [view, setView] = useState<View>("board");
+  const [pendingOpenCardId, setPendingOpenCardId] = useState<string | null>(null);
 
   if (state.projects.length === 0) {
     return (
@@ -40,13 +41,17 @@ export default function Home() {
       <TopBar view={view} onChangeView={setView} />
       {view === "board" ? (
         <div className="flex flex-1 min-h-0">
-          <KanbanBoard />
+          <KanbanBoard
+            openCardId={pendingOpenCardId}
+            onCardOpened={() => setPendingOpenCardId(null)}
+          />
           {activeProject && <Sidebar />}
         </div>
       ) : (
         <AgendaView
-          onJumpToProject={(projectId) => {
+          onJumpToItem={(projectId, cardId) => {
             setActiveProject(projectId);
+            setPendingOpenCardId(cardId);
             setView("board");
           }}
         />

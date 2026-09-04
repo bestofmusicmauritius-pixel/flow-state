@@ -16,6 +16,8 @@ import { COLUMN_BRACKET, type Priority } from "@/types";
 
 interface AgendaItem {
   key: string;
+  type: "card" | "todo";
+  id: string;
   projectId: string;
   projectName: string;
   title: string;
@@ -47,10 +49,10 @@ const GROUP_LABEL: Record<DueUrgency, string> = {
 };
 
 interface AgendaViewProps {
-  onJumpToProject: (projectId: string) => void;
+  onJumpToItem: (projectId: string, cardId: string | null) => void;
 }
 
-export function AgendaView({ onJumpToProject }: AgendaViewProps) {
+export function AgendaView({ onJumpToItem }: AgendaViewProps) {
   const { state } = useAppStateContext();
 
   const items: AgendaItem[] = [];
@@ -59,6 +61,8 @@ export function AgendaView({ onJumpToProject }: AgendaViewProps) {
       if (card.column === "complete" || !card.dueDate) continue;
       items.push({
         key: `card:${card.id}`,
+        type: "card",
+        id: card.id,
         projectId: project.id,
         projectName: project.name,
         title: card.title,
@@ -73,6 +77,8 @@ export function AgendaView({ onJumpToProject }: AgendaViewProps) {
       if (todo.done || !todo.dueDate) continue;
       items.push({
         key: `todo:${todo.id}`,
+        type: "todo",
+        id: todo.id,
         projectId: project.id,
         projectName: project.name,
         title: todo.text,
@@ -120,7 +126,9 @@ export function AgendaView({ onJumpToProject }: AgendaViewProps) {
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => onJumpToProject(item.projectId)}
+                  onClick={() =>
+                    onJumpToItem(item.projectId, item.type === "card" ? item.id : null)
+                  }
                   className="flex items-center gap-2 py-1.5 px-1 rounded-sm hover:bg-bg-card transition-colors text-left font-mono text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-accent"
                 >
                   <span className="text-text-muted shrink-0">{item.bracket}</span>
