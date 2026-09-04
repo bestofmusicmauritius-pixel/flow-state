@@ -1,8 +1,9 @@
 import { ProjectSwitcher } from "@/components/project/ProjectSwitcher";
+import { BackupControls } from "@/components/layout/BackupControls";
 
 export function TopBar() {
   return (
-    <header className="h-12 shrink-0 bg-bg-elevated border-b border-border px-4 flex items-center">
+    <header className="h-12 shrink-0 bg-bg-elevated border-b border-border px-4 flex items-center justify-between">
       <div className="flex items-center gap-1 font-mono text-sm">
         <span className="text-text-faint">~/flow-state/</span>
         <ProjectSwitcher />
@@ -10,6 +11,7 @@ export function TopBar() {
           █
         </span>
       </div>
+      <BackupControls />
     </header>
   );
 }

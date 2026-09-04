@@ -84,6 +84,15 @@ export function useAppState() {
     setState((prev) => ({ ...prev, activeProjectId: id }));
   }, []);
 
+  // --- Backup ---
+
+  const replaceState = useCallback((next: AppState) => {
+    const activeProjectId = next.projects.some((p) => p.id === next.activeProjectId)
+      ? next.activeProjectId
+      : (next.projects[0]?.id ?? null);
+    setState({ projects: next.projects, activeProjectId });
+  }, []);
+
   // --- Kanban cards ---
 
   const addCard = useCallback(
@@ -241,6 +250,7 @@ export function useAppState() {
   return {
     state,
     activeProject,
+    replaceState,
     createProject,
     renameProject,
     deleteProject,

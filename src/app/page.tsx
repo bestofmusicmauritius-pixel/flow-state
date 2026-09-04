@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { ProjectDialog } from "@/components/project/ProjectDialog";
 import { Button } from "@/components/ui/Button";
+import { BackupControls } from "@/components/layout/BackupControls";
 
 export default function Home() {
   const { state, activeProject, createProject } = useAppStateContext();
@@ -19,6 +20,8 @@ export default function Home() {
         <Button variant="primary" onClick={() => setCreateOpen(true)}>
           Create your first project
         </Button>
+        <p className="font-mono text-xs text-text-faint">or</p>
+        <BackupControls showExport={false} />
         <ProjectDialog
           key={createOpen ? "create-open" : "create-closed"}
           open={createOpen}
