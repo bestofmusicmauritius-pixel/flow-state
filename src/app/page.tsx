@@ -7,15 +7,31 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { AgendaView } from "@/components/agenda/AgendaView";
 import { SearchView } from "@/components/search/SearchView";
+import { ArchiveView } from "@/components/archive/ArchiveView";
+import { ShortcutsHelpDialog } from "@/components/layout/ShortcutsHelpDialog";
 import { ProjectDialog } from "@/components/project/ProjectDialog";
 import { Button } from "@/components/ui/Button";
 import { BackupControls } from "@/components/layout/BackupControls";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 export default function Home() {
   const { state, activeProject, createProject, setActiveProject } = useAppStateContext();
   const [createOpen, setCreateOpen] = useState(false);
   const [view, setView] = useState<View>("board");
   const [pendingOpenCardId, setPendingOpenCardId] = useState<string | null>(null);
+  const [pendingCreate, setPendingCreate] = useState(false);
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+
+  useKeyboardShortcuts({
+    "/": () => setView("search"),
+    b: () => setView("board"),
+    a: () => setView("agenda"),
+    n: () => {
+      setView("board");
+      setPendingCreate(true);
+    },
+    "?": () => setShowShortcutsHelp(true),
+  });
 
   if (state.projects.length === 0) {
     return (
@@ -32,6 +48,10 @@ export default function Home() {
           mode="create"
           onClose={() => setCreateOpen(false)}
           onSubmit={(name) => createProject(name)}
+        />
+        <ShortcutsHelpDialog
+          open={showShortcutsHelp}
+          onClose={() => setShowShortcutsHelp(false)}
         />
       </main>
     );
@@ -51,12 +71,16 @@ export default function Home() {
           <KanbanBoard
             openCardId={pendingOpenCardId}
             onCardOpened={() => setPendingOpenCardId(null)}
+            requestCreate={pendingCreate}
+            onCreateRequested={() => setPendingCreate(false)}
           />
           {activeProject && <Sidebar />}
         </div>
       )}
       {view === "agenda" && <AgendaView onJumpToItem={jumpToItem} />}
       {view === "search" && <SearchView onJumpToItem={jumpToItem} />}
+      {view === "archive" && <ArchiveView />}
+      <ShortcutsHelpDialog open={showShortcutsHelp} onClose={() => setShowShortcutsHelp(false)} />
     </main>
   );
 }

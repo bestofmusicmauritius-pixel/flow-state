@@ -2,14 +2,23 @@
 
 import { useState } from "react";
 import { useAppStateContext } from "@/context/AppStateContext";
+import { useToast } from "@/context/ToastContext";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ProjectDialog } from "@/components/project/ProjectDialog";
 
 export function ProjectSwitcher() {
-  const { state, activeProject, createProject, renameProject, deleteProject, setActiveProject } =
-    useAppStateContext();
+  const {
+    state,
+    activeProject,
+    createProject,
+    renameProject,
+    deleteProject,
+    undoDeleteProject,
+    setActiveProject,
+  } = useAppStateContext();
+  const { showToast } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string } | null>(null);
@@ -111,9 +120,15 @@ export function ProjectSwitcher() {
       <ConfirmDialog
         open={deleteTarget !== null}
         title="Delete Project"
-        message={`Delete "${deleteTarget?.name}" and everything in it? This cannot be undone.`}
+        message={`Delete "${deleteTarget?.name}" and everything in it? This cannot be undone once the undo option below expires.`}
         onConfirm={() => {
-          if (deleteTarget) deleteProject(deleteTarget.id);
+          if (deleteTarget) {
+            const project = state.projects.find((p) => p.id === deleteTarget.id);
+            deleteProject(deleteTarget.id);
+            if (project) {
+              showToast(`"${project.name}" deleted`, () => undoDeleteProject(project));
+            }
+          }
           setDeleteTarget(null);
         }}
         onCancel={() => setDeleteTarget(null)}

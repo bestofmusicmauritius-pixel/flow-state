@@ -3,19 +3,17 @@
 import { useState } from "react";
 import clsx from "clsx";
 import { useAppStateContext } from "@/context/AppStateContext";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ArchivedCardRow } from "@/components/archive/ArchivedCardRow";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
 import { formatDueDateTime } from "@/lib/dueDate";
 import { PRIORITY_COLOR, PRIORITY_TAG } from "@/lib/priority";
-import { parseQuery, matchesQuery, type SearchMode } from "@/lib/search";
-import { COLUMN_BRACKET, type Priority } from "@/types";
+import { parseQuery, matchesQuery, extractSnippet, type SearchMode } from "@/lib/search";
+import { COLUMN_BRACKET, type KanbanCard, type Priority } from "@/types";
 
 interface SearchResult {
   key: string;
   type: "card" | "todo";
-  archived: boolean;
   id: string;
   projectId: string;
   projectName: string;
@@ -27,22 +25,36 @@ interface SearchResult {
   dueTime?: string;
 }
 
+interface NoteResult {
+  key: string;
+  projectId: string;
+  projectName: string;
+  snippet: string;
+}
+
+interface ArchivedResult {
+  key: string;
+  projectId: string;
+  projectName: string;
+  card: KanbanCard;
+}
+
 interface SearchViewProps {
   onJumpToItem: (projectId: string, cardId: string | null) => void;
 }
 
 export function SearchView({ onJumpToItem }: SearchViewProps) {
-  const { state, restoreCard, deleteArchivedCard } = useAppStateContext();
+  const { state } = useAppStateContext();
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<SearchMode>("all");
   const [includeArchived, setIncludeArchived] = useState(true);
-  const [deleting, setDeleting] = useState<{ projectId: string; id: string; title: string } | null>(
-    null
-  );
 
   const trimmed = query.trim();
 
   let results: SearchResult[] = [];
+  const noteResults: NoteResult[] = [];
+  const archivedResults: ArchivedResult[] = [];
+
   if (trimmed) {
     const parsed = parseQuery(trimmed, mode);
     const all: SearchResult[] = [];
@@ -52,7 +64,6 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
         all.push({
           key: `card:${card.id}`,
           type: "card",
-          archived: false,
           id: card.id,
           projectId: project.id,
           projectName: project.name,
@@ -64,29 +75,10 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
           dueTime: card.dueTime,
         });
       }
-      if (includeArchived) {
-        for (const card of project.archivedCards) {
-          all.push({
-            key: `archived:${card.id}`,
-            type: "card",
-            archived: true,
-            id: card.id,
-            projectId: project.id,
-            projectName: project.name,
-            title: card.title,
-            description: card.description,
-            bracket: COLUMN_BRACKET[card.column],
-            priority: card.priority,
-            dueDate: card.dueDate,
-            dueTime: card.dueTime,
-          });
-        }
-      }
       for (const todo of project.todos) {
         all.push({
           key: `todo:${todo.id}`,
           type: "todo",
-          archived: false,
           id: todo.id,
           projectId: project.id,
           projectName: project.name,
@@ -97,6 +89,26 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
           dueTime: todo.dueTime,
         });
       }
+      if (project.notes.trim() && matchesQuery(project.notes, parsed)) {
+        noteResults.push({
+          key: `notes:${project.id}`,
+          projectId: project.id,
+          projectName: project.name,
+          snippet: extractSnippet(project.notes, parsed),
+        });
+      }
+      if (includeArchived) {
+        for (const card of project.archivedCards) {
+          if (matchesQuery(`${card.title} ${card.description ?? ""} ${project.name}`, parsed)) {
+            archivedResults.push({
+              key: `archived:${card.id}`,
+              projectId: project.id,
+              projectName: project.name,
+              card,
+            });
+          }
+        }
+      }
     }
 
     results = all.filter((item) =>
@@ -104,8 +116,8 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
     );
   }
 
-  const activeResults = results.filter((r) => !r.archived);
-  const archivedResults = results.filter((r) => r.archived);
+  const nothingFound =
+    trimmed && results.length === 0 && noteResults.length === 0 && archivedResults.length === 0;
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
@@ -157,17 +169,17 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
 
         {!trimmed ? (
           <EmptyState>$ type to search across every project</EmptyState>
-        ) : results.length === 0 ? (
+        ) : nothingFound ? (
           <EmptyState>$ no results</EmptyState>
         ) : (
           <div className="flex flex-col gap-6">
-            {activeResults.length > 0 && (
+            {results.length > 0 && (
               <div>
                 <h2 className="font-mono text-xs text-text-faint mb-2 pb-1 border-b border-border">
-                  results ({activeResults.length})
+                  results ({results.length})
                 </h2>
                 <div className="flex flex-col">
-                  {activeResults.map((item) => (
+                  {results.map((item) => (
                     <button
                       key={item.key}
                       type="button"
@@ -196,6 +208,27 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
               </div>
             )}
 
+            {noteResults.length > 0 && (
+              <div>
+                <h2 className="font-mono text-xs text-text-faint mb-2 pb-1 border-b border-border">
+                  notes ({noteResults.length})
+                </h2>
+                <div className="flex flex-col">
+                  {noteResults.map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => onJumpToItem(item.projectId, null)}
+                      className="flex flex-col items-start gap-0.5 py-1.5 px-1 rounded-sm hover:bg-bg-card transition-colors text-left font-mono text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                    >
+                      <span className="text-text-faint text-xs">{item.projectName}</span>
+                      <span className="text-text-primary">{item.snippet}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {archivedResults.length > 0 && (
               <div>
                 <h2 className="font-mono text-xs text-text-faint mb-2 pb-1 border-b border-border">
@@ -203,40 +236,12 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
                 </h2>
                 <div className="flex flex-col">
                   {archivedResults.map((item) => (
-                    <div
+                    <ArchivedCardRow
                       key={item.key}
-                      className="flex items-center gap-2 py-1.5 px-1 rounded-sm font-mono text-sm"
-                    >
-                      <span className="text-text-faint shrink-0">{item.bracket}</span>
-                      <span className="text-text-faint shrink-0">{item.projectName}</span>
-                      <span className="text-text-faint shrink-0">·</span>
-                      {item.priority && (
-                        <span className={clsx("shrink-0", PRIORITY_COLOR[item.priority])}>
-                          {PRIORITY_TAG[item.priority]}
-                        </span>
-                      )}
-                      <span className="text-text-muted truncate flex-1">{item.title}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setDeleting({
-                            projectId: item.projectId,
-                            id: item.id,
-                            title: item.title,
-                          })
-                        }
-                      >
-                        delete forever
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => restoreCard(item.projectId, item.id)}
-                      >
-                        restore
-                      </Button>
-                    </div>
+                      projectId={item.projectId}
+                      projectName={item.projectName}
+                      card={item.card}
+                    />
                   ))}
                 </div>
               </div>
@@ -244,17 +249,6 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
           </div>
         )}
       </div>
-
-      <ConfirmDialog
-        open={deleting !== null}
-        title="Delete Forever"
-        message={`Permanently delete "${deleting?.title}"? This cannot be undone — it won't be recoverable from the archive anymore.`}
-        onConfirm={() => {
-          if (deleting) deleteArchivedCard(deleting.projectId, deleting.id);
-          setDeleting(null);
-        }}
-        onCancel={() => setDeleting(null)}
-      />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { createId } from "@/lib/id";
 import { moveCardToColumn, nextOrderInColumn, reorderCardsInColumn } from "@/lib/reorder";
 import { createEmptyProject, seedState } from "@/lib/seed";
 import { localStorageStore } from "@/lib/storage";
-import type { AppState, ColumnId, Priority, Project } from "@/types";
+import type { AppState, ColumnId, KanbanCard, Priority, Project, TodoItem } from "@/types";
 
 export function useAppState() {
   const [state, setState] = useState<AppState>(seedState);
@@ -100,6 +100,15 @@ export function useAppState() {
 
   const setActiveProject = useCallback((id: string) => {
     setState((prev) => ({ ...prev, activeProjectId: id }));
+  }, []);
+
+  /** Re-inserts a whole deleted project and makes it active again — the
+   * undo half of deleteProject. */
+  const undoDeleteProject = useCallback((project: Project) => {
+    setState((prev) => ({
+      projects: [...prev.projects, project],
+      activeProjectId: project.id,
+    }));
   }, []);
 
   // --- Backup ---
@@ -197,6 +206,17 @@ export function useAppState() {
     [updateActiveProject]
   );
 
+  /** Re-inserts a card exactly as it was — the undo half of deleteCard. */
+  const undoDeleteCard = useCallback(
+    (projectId: string, card: KanbanCard) => {
+      updateProjectById(projectId, (project) => ({
+        ...project,
+        cards: [...project.cards, card],
+      }));
+    },
+    [updateProjectById]
+  );
+
   const moveCard = useCallback(
     (cardId: string, toColumn: ColumnId, toIndex: number) => {
       updateActiveProject((project) => ({
@@ -275,11 +295,41 @@ export function useAppState() {
     [updateProjectById]
   );
 
+  /** Bulk restore — the undo half of archiveCompletedCards. */
+  const restoreCards = useCallback(
+    (projectId: string, cardIds: string[]) => {
+      updateProjectById(projectId, (project) => {
+        const idSet = new Set(cardIds);
+        const toRestore = project.archivedCards
+          .filter((c) => idSet.has(c.id))
+          .map((c) => ({ ...c, archivedAt: undefined }));
+        if (toRestore.length === 0) return project;
+        return {
+          ...project,
+          archivedCards: project.archivedCards.filter((c) => !idSet.has(c.id)),
+          cards: [...project.cards, ...toRestore],
+        };
+      });
+    },
+    [updateProjectById]
+  );
+
   const deleteArchivedCard = useCallback(
     (projectId: string, cardId: string) => {
       updateProjectById(projectId, (project) => ({
         ...project,
         archivedCards: project.archivedCards.filter((c) => c.id !== cardId),
+      }));
+    },
+    [updateProjectById]
+  );
+
+  /** Re-inserts a card back into the archive — the undo half of deleteArchivedCard. */
+  const undoDeleteArchivedCard = useCallback(
+    (projectId: string, card: KanbanCard) => {
+      updateProjectById(projectId, (project) => ({
+        ...project,
+        archivedCards: [...project.archivedCards, card],
       }));
     },
     [updateProjectById]
@@ -331,6 +381,17 @@ export function useAppState() {
       }));
     },
     [updateActiveProject]
+  );
+
+  /** Re-inserts a todo exactly as it was — the undo half of deleteTodo. */
+  const undoDeleteTodo = useCallback(
+    (projectId: string, todo: TodoItem) => {
+      updateProjectById(projectId, (project) => ({
+        ...project,
+        todos: [...project.todos, todo],
+      }));
+    },
+    [updateProjectById]
   );
 
   const updateTodo = useCallback(
@@ -393,19 +454,24 @@ export function useAppState() {
     createProject,
     renameProject,
     deleteProject,
+    undoDeleteProject,
     setActiveProject,
     addCard,
     updateCard,
     deleteCard,
+    undoDeleteCard,
     moveCard,
     reorderCards,
     archiveCard,
     archiveCompletedCards,
     restoreCard,
+    restoreCards,
     deleteArchivedCard,
+    undoDeleteArchivedCard,
     addTodo,
     toggleTodo,
     deleteTodo,
+    undoDeleteTodo,
     updateTodo,
     reorderTodos,
     updateNotes,

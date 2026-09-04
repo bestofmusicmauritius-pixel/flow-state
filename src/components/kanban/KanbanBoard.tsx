@@ -15,6 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useAppStateContext } from "@/context/AppStateContext";
+import { useToast } from "@/context/ToastContext";
 import { KanbanColumn, type SortMode } from "@/components/kanban/KanbanColumn";
 import { KanbanCardOverlay } from "@/components/kanban/KanbanCardOverlay";
 import { CardDialog } from "@/components/kanban/CardDialog";
@@ -27,18 +28,32 @@ interface KanbanBoardProps {
    * specific card's edit dialog once its project becomes active. */
   openCardId?: string | null;
   onCardOpened?: () => void;
+  /** One-shot request (e.g. the "n" keyboard shortcut) to open the create-task
+   * dialog for the "todo" column. */
+  requestCreate?: boolean;
+  onCreateRequested?: () => void;
 }
 
-export function KanbanBoard({ openCardId, onCardOpened }: KanbanBoardProps) {
+export function KanbanBoard({
+  openCardId,
+  onCardOpened,
+  requestCreate,
+  onCreateRequested,
+}: KanbanBoardProps) {
   const {
     activeProject,
     addCard,
     updateCard,
     deleteCard,
+    undoDeleteCard,
     moveCard,
     reorderCards,
+    archiveCard,
     archiveCompletedCards,
+    restoreCard,
+    restoreCards,
   } = useAppStateContext();
+  const { showToast } = useToast();
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [creatingColumn, setCreatingColumn] = useState<ColumnId | null>(null);
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
@@ -64,6 +79,13 @@ export function KanbanBoard({ openCardId, onCardOpened }: KanbanBoardProps) {
     setEditingCardId(openCardId);
     onCardOpened?.();
   }, [openCardId, onCardOpened]);
+
+  useEffect(() => {
+    if (!requestCreate) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCreatingColumn("todo");
+    onCreateRequested?.();
+  }, [requestCreate, onCreateRequested]);
 
   if (!activeProject) {
     return (
@@ -197,14 +219,27 @@ export function KanbanBoard({ openCardId, onCardOpened }: KanbanBoardProps) {
           setDeletingCardId(editingCardId);
           setEditingCardId(null);
         }}
+        onArchive={() => {
+          if (editingCardId) {
+            archiveCard(activeProject.id, editingCardId);
+            showToast("Task archived", () => restoreCard(activeProject.id, editingCardId));
+          }
+          setEditingCardId(null);
+        }}
       />
 
       <ConfirmDialog
         open={deletingCardId !== null}
         title="Delete Task"
-        message="Delete this task? This cannot be undone."
+        message="Delete this task? This cannot be undone once the undo option below expires."
         onConfirm={() => {
-          if (deletingCardId) deleteCard(deletingCardId);
+          if (deletingCardId) {
+            const card = cards.find((c) => c.id === deletingCardId);
+            deleteCard(deletingCardId);
+            if (card) {
+              showToast(`"${card.title}" deleted`, () => undoDeleteCard(activeProject.id, card));
+            }
+          }
           setDeletingCardId(null);
         }}
         onCancel={() => setDeletingCardId(null)}
@@ -213,10 +248,16 @@ export function KanbanBoard({ openCardId, onCardOpened }: KanbanBoardProps) {
       <ConfirmDialog
         open={confirmingArchiveComplete}
         title="Archive Completed"
-        message="Move every card in Complete to the archive? You can restore them later from search."
+        message="Move every card in Complete to the archive? You can restore them later from search or the archive view."
         confirmLabel="Archive"
         onConfirm={() => {
+          const archivedIds = cardsInColumn("complete").map((c) => c.id);
           archiveCompletedCards(activeProject.id);
+          if (archivedIds.length > 0) {
+            showToast(`${archivedIds.length} task${archivedIds.length === 1 ? "" : "s"} archived`, () =>
+              restoreCards(activeProject.id, archivedIds)
+            );
+          }
           setConfirmingArchiveComplete(false);
         }}
         onCancel={() => setConfirmingArchiveComplete(false)}

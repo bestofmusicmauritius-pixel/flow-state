@@ -3,12 +3,13 @@ import { ProjectSwitcher } from "@/components/project/ProjectSwitcher";
 import { BackupControls } from "@/components/layout/BackupControls";
 import { NotificationControls } from "@/components/layout/NotificationControls";
 
-export type View = "board" | "agenda" | "search";
+export type View = "board" | "agenda" | "search" | "archive";
 
 const VIEWS: { id: View; label: string }[] = [
   { id: "board", label: "[board]" },
   { id: "agenda", label: "[agenda]" },
   { id: "search", label: "[search]" },
+  { id: "archive", label: "[archive]" },
 ];
 
 interface TopBarProps {

@@ -16,13 +16,22 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useAppStateContext } from "@/context/AppStateContext";
+import { useToast } from "@/context/ToastContext";
 import { TodoListItem } from "@/components/todos/TodoListItem";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 
 export function TodoList() {
-  const { activeProject, addTodo, toggleTodo, deleteTodo, updateTodo, reorderTodos } =
-    useAppStateContext();
+  const {
+    activeProject,
+    addTodo,
+    toggleTodo,
+    deleteTodo,
+    undoDeleteTodo,
+    updateTodo,
+    reorderTodos,
+  } = useAppStateContext();
+  const { showToast } = useToast();
   const [draft, setDraft] = useState("");
 
   const sensors = useSensors(
@@ -70,7 +79,12 @@ export function TodoList() {
                   key={todo.id}
                   todo={todo}
                   onToggle={() => toggleTodo(todo.id)}
-                  onDelete={() => deleteTodo(todo.id)}
+                  onDelete={() => {
+                    deleteTodo(todo.id);
+                    showToast(`"${todo.text}" deleted`, () =>
+                      undoDeleteTodo(activeProject.id, todo)
+                    );
+                  }}
                   onChangePriority={(priority) => updateTodo(todo.id, { priority })}
                   onChangeDueDate={(dueDate, dueTime) => updateTodo(todo.id, { dueDate, dueTime })}
                 />

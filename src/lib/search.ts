@@ -91,3 +91,24 @@ export function matchesQuery(haystack: string, query: ParsedQuery): boolean {
   if (query.should.length > 0 && !query.should.some((term) => text.includes(term))) return false;
   return true;
 }
+
+/** A short window of text around the first matched term, for showing why a
+ * long free-text field (like notes) matched a query. */
+export function extractSnippet(text: string, query: ParsedQuery, radius = 40): string {
+  const lower = text.toLowerCase();
+  let matchIndex = -1;
+  for (const term of [...query.must, ...query.should]) {
+    const index = lower.indexOf(term);
+    if (index !== -1 && (matchIndex === -1 || index < matchIndex)) matchIndex = index;
+  }
+
+  if (matchIndex === -1) {
+    const head = text.slice(0, radius * 2).trim();
+    return text.length > radius * 2 ? `${head}…` : head;
+  }
+
+  const start = Math.max(0, matchIndex - radius);
+  const end = Math.min(text.length, matchIndex + radius);
+  const snippet = text.slice(start, end).trim();
+  return `${start > 0 ? "…" : ""}${snippet}${end < text.length ? "…" : ""}`;
+}

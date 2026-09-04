@@ -28,6 +28,7 @@ interface CardDialogProps {
   onClose: () => void;
   onSubmit: (values: CardDialogSubmitValues) => void;
   onDelete?: () => void;
+  onArchive?: () => void;
 }
 
 export function CardDialog({
@@ -41,6 +42,7 @@ export function CardDialog({
   onClose,
   onSubmit,
   onDelete,
+  onArchive,
 }: CardDialogProps) {
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
@@ -145,10 +147,19 @@ export function CardDialog({
           </div>
         </div>
         <div className="flex justify-between items-center mt-2">
-          {mode === "edit" && onDelete ? (
-            <Button type="button" variant="danger" size="sm" onClick={onDelete}>
-              Delete
-            </Button>
+          {mode === "edit" ? (
+            <div className="flex gap-2">
+              {onArchive && (
+                <Button type="button" variant="ghost" size="sm" onClick={onArchive}>
+                  Archive
+                </Button>
+              )}
+              {onDelete && (
+                <Button type="button" variant="danger" size="sm" onClick={onDelete}>
+                  Delete
+                </Button>
+              )}
+            </div>
           ) : (
             <span />
           )}
