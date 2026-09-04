@@ -24,6 +24,11 @@ export function KanbanCardOverlay({ card }: { card: KanbanCardType }) {
             {card.description}
           </p>
         )}
+        {card.tags && card.tags.length > 0 && (
+          <p className="mt-1 font-mono text-[11px] text-text-muted">
+            {card.tags.map((tag) => `#${tag}`).join(" ")}
+          </p>
+        )}
         {card.dueDate &&
           (() => {
             const urgency = getDueUrgency(card.dueDate, card.dueTime, card.column === "complete");

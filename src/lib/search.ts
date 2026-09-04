@@ -6,6 +6,33 @@ export interface ParsedQuery {
   mustNot: string[];
 }
 
+interface RawToken {
+  text: string;
+  quoted: boolean;
+}
+
+function tokenize(raw: string): RawToken[] {
+  const tokenRegex = /"([^"]+)"|(\S+)/g;
+  const tokens: RawToken[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = tokenRegex.exec(raw))) {
+    if (match[1] !== undefined) {
+      tokens.push({ text: match[1].toLowerCase(), quoted: true });
+    } else {
+      tokens.push({ text: match[2].toLowerCase(), quoted: false });
+    }
+  }
+  return tokens;
+}
+
+/** Tags are stored and matched without their "#" — it's a display-only
+ * prefix (see lib/tags.ts) — so a bare search term gets the same treatment
+ * here, or "#test" would fail to find a stored tag "test". Quoted phrases
+ * stay literal, so `"#literally-this"` is still possible if ever needed. */
+function termOf(token: RawToken): string {
+  return token.quoted ? token.text : token.text.replace(/^#+/, "");
+}
+
 /**
  * Lightweight boolean query parser: "all words" (default AND) vs "any word"
  * (default OR) sets how plain terms combine, and explicit operators always
@@ -22,20 +49,15 @@ export function parseQuery(raw: string, mode: SearchMode): ParsedQuery {
   const should: string[] = [];
   const mustNot: string[] = [];
 
-  const tokenRegex = /"([^"]+)"|(\S+)/g;
-  const rawTokens: string[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = tokenRegex.exec(raw))) {
-    rawTokens.push((match[1] ?? match[2]).toLowerCase());
-  }
+  const rawTokens = tokenize(raw);
 
   let lastPlain: { list: string[]; index: number } | null = null;
   let pendingOr = false;
 
   for (let i = 0; i < rawTokens.length; i++) {
-    let token = rawTokens[i];
+    let current = rawTokens[i];
 
-    if (token === "or") {
+    if (!current.quoted && current.text === "or") {
       if (lastPlain && lastPlain.list !== should) {
         const [term] = lastPlain.list.splice(lastPlain.index, 1);
         should.push(term);
@@ -44,39 +66,42 @@ export function parseQuery(raw: string, mode: SearchMode): ParsedQuery {
       lastPlain = null;
       continue;
     }
-    if (token === "and") {
+    if (!current.quoted && current.text === "and") {
       pendingOr = false;
       lastPlain = null;
       continue;
     }
 
     let negate = false;
-    if (token === "not") {
+    if (!current.quoted && current.text === "not") {
       i++;
-      token = rawTokens[i];
-      if (token === undefined) break;
+      current = rawTokens[i];
+      if (current === undefined) break;
       negate = true;
-    } else if (token.startsWith("-") && token.length > 1) {
+    } else if (!current.quoted && current.text.startsWith("-") && current.text.length > 1) {
       negate = true;
-      token = token.slice(1);
+      current = { text: current.text.slice(1), quoted: false };
     }
 
+    const term = termOf(current);
+    if (!term) continue;
+
     if (negate) {
-      mustNot.push(token);
+      mustNot.push(term);
       pendingOr = false;
       lastPlain = null;
       continue;
     }
 
     if (pendingOr) {
-      should.push(token);
+      should.push(term);
       lastPlain = { list: should, index: should.length - 1 };
       pendingOr = false;
     } else if (mode === "any") {
-      should.push(token);
+      should.push(term);
       lastPlain = { list: should, index: should.length - 1 };
     } else {
-      must.push(token);
+      must.push(term);
       lastPlain = { list: must, index: must.length - 1 };
     }
   }

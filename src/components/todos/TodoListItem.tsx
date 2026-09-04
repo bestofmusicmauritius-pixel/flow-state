@@ -5,6 +5,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
 import { IconButton } from "@/components/ui/IconButton";
+import { TagEditor } from "@/components/ui/TagEditor";
 import { getDueUrgency, formatDueDateTime, DUE_COLOR, DUE_LABEL } from "@/lib/dueDate";
 import { PRIORITY_COLOR, PRIORITY_TAG } from "@/lib/priority";
 import { PRIORITIES, type Priority, type TodoItem } from "@/types";
@@ -15,6 +16,7 @@ interface TodoListItemProps {
   onDelete: () => void;
   onChangePriority: (priority: Priority | null) => void;
   onChangeDueDate: (dueDate: string | null, dueTime: string | null) => void;
+  onChangeTags: (tags: string[]) => void;
 }
 
 export function TodoListItem({
@@ -23,12 +25,14 @@ export function TodoListItem({
   onDelete,
   onChangePriority,
   onChangeDueDate,
+  onChangeTags,
 }: TodoListItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: todo.id,
   });
   const [priorityMenuOpen, setPriorityMenuOpen] = useState(false);
   const [dueMenuOpen, setDueMenuOpen] = useState(false);
+  const [tagsMenuOpen, setTagsMenuOpen] = useState(false);
   const [draftDate, setDraftDate] = useState("");
   const [draftTime, setDraftTime] = useState("");
 
@@ -201,6 +205,29 @@ export function TodoListItem({
                     set
                   </button>
                 </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setTagsMenuOpen((v) => !v)}
+            className={clsx(
+              todo.tags && todo.tags.length > 0 ? "text-text-muted" : "text-text-faint",
+              "hover:opacity-80 transition-opacity"
+            )}
+          >
+            {todo.tags && todo.tags.length > 0
+              ? todo.tags.map((tag) => `#${tag}`).join(" ")
+              : "+ tags"}
+          </button>
+          {tagsMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setTagsMenuOpen(false)} />
+              <div className="absolute left-0 top-full mt-1 z-50 w-56 bg-bg-elevated border border-border-strong rounded-md shadow-[0_0_0_1px_rgba(255,181,69,0.08),0_8px_24px_rgba(0,0,0,0.5)] p-2">
+                <TagEditor autoFocus tags={todo.tags ?? []} onChange={onChangeTags} />
               </div>
             </>
           )}

@@ -6,6 +6,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
+import { TagEditor } from "@/components/ui/TagEditor";
 import { PRIORITY_COLOR, PRIORITY_TAG } from "@/lib/priority";
 import { PRIORITIES, type Priority } from "@/types";
 
@@ -15,6 +16,7 @@ export interface CardDialogSubmitValues {
   priority: Priority | null;
   dueDate: string | null;
   dueTime: string | null;
+  tags: string[];
 }
 
 interface CardDialogProps {
@@ -25,6 +27,7 @@ interface CardDialogProps {
   initialPriority?: Priority;
   initialDueDate?: string;
   initialDueTime?: string;
+  initialTags?: string[];
   onClose: () => void;
   onSubmit: (values: CardDialogSubmitValues) => void;
   onDelete?: () => void;
@@ -39,6 +42,7 @@ export function CardDialog({
   initialPriority,
   initialDueDate,
   initialDueTime,
+  initialTags,
   onClose,
   onSubmit,
   onDelete,
@@ -49,6 +53,7 @@ export function CardDialog({
   const [priority, setPriority] = useState<Priority | null>(initialPriority ?? null);
   const [dueDate, setDueDate] = useState<string>(initialDueDate ?? "");
   const [dueTime, setDueTime] = useState<string>(initialDueTime ?? "");
+  const [tags, setTags] = useState<string[]>(initialTags ?? []);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,6 +64,7 @@ export function CardDialog({
       priority,
       dueDate: dueDate || null,
       dueTime: dueDate ? dueTime || null : null,
+      tags,
     });
     onClose();
   }
@@ -145,6 +151,10 @@ export function CardDialog({
               </button>
             )}
           </div>
+        </div>
+        <div>
+          <p className="font-mono text-xs text-text-faint mb-1.5">{"// tags"}</p>
+          <TagEditor tags={tags} onChange={setTags} />
         </div>
         <div className="flex justify-between items-center mt-2">
           {mode === "edit" ? (

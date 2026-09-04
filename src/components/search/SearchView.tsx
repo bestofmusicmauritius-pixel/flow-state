@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import clsx from "clsx";
 import { useAppStateContext } from "@/context/AppStateContext";
 import { ArchivedCardRow } from "@/components/archive/ArchivedCardRow";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { formatDueDateTime } from "@/lib/dueDate";
 import { PRIORITY_COLOR, PRIORITY_TAG } from "@/lib/priority";
 import { parseQuery, matchesQuery, extractSnippet, type SearchMode } from "@/lib/search";
+import { getAllTags } from "@/lib/tags";
 import { COLUMN_BRACKET, type KanbanCard, type Priority } from "@/types";
 
 interface SearchResult {
@@ -23,6 +24,7 @@ interface SearchResult {
   priority?: Priority;
   dueDate?: string;
   dueTime?: string;
+  tags?: string[];
 }
 
 interface NoteResult {
@@ -50,6 +52,7 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
   const [includeArchived, setIncludeArchived] = useState(true);
 
   const trimmed = query.trim();
+  const allTags = useMemo(() => getAllTags(state), [state]);
 
   let results: SearchResult[] = [];
   const noteResults: NoteResult[] = [];
@@ -73,6 +76,7 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
           priority: card.priority,
           dueDate: card.dueDate,
           dueTime: card.dueTime,
+          tags: card.tags,
         });
       }
       for (const todo of project.todos) {
@@ -87,6 +91,7 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
           priority: todo.priority,
           dueDate: todo.dueDate,
           dueTime: todo.dueTime,
+          tags: todo.tags,
         });
       }
       if (project.notes.trim() && matchesQuery(project.notes, parsed)) {
@@ -99,7 +104,8 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
       }
       if (includeArchived) {
         for (const card of project.archivedCards) {
-          if (matchesQuery(`${card.title} ${card.description ?? ""} ${project.name}`, parsed)) {
+          const haystack = `${card.title} ${card.description ?? ""} ${project.name} ${(card.tags ?? []).join(" ")}`;
+          if (matchesQuery(haystack, parsed)) {
             archivedResults.push({
               key: `archived:${card.id}`,
               projectId: project.id,
@@ -112,7 +118,10 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
     }
 
     results = all.filter((item) =>
-      matchesQuery(`${item.title} ${item.description ?? ""} ${item.projectName}`, parsed)
+      matchesQuery(
+        `${item.title} ${item.description ?? ""} ${item.projectName} ${(item.tags ?? []).join(" ")}`,
+        parsed
+      )
     );
   }
 
@@ -168,7 +177,25 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
         </div>
 
         {!trimmed ? (
-          <EmptyState>$ type to search across every project</EmptyState>
+          allTags.length > 0 ? (
+            <div>
+              <p className="font-mono text-xs text-text-faint mb-2">{"// browse by tag"}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {allTags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setQuery(`#${tag}`)}
+                    className="font-mono text-xs px-1.5 py-0.5 rounded-sm border border-border text-text-muted hover:border-border-strong hover:text-text-primary transition-colors"
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <EmptyState>$ type to search across every project</EmptyState>
+          )
         ) : nothingFound ? (
           <EmptyState>$ no results</EmptyState>
         ) : (
@@ -197,6 +224,11 @@ export function SearchView({ onJumpToItem }: SearchViewProps) {
                         </span>
                       )}
                       <span className="text-text-primary truncate flex-1">{item.title}</span>
+                      {item.tags && item.tags.length > 0 && (
+                        <span className="shrink-0 text-xs text-text-muted">
+                          {item.tags.map((tag) => `#${tag}`).join(" ")}
+                        </span>
+                      )}
                       {item.dueDate && (
                         <span className="shrink-0 text-xs text-text-faint">
                           {formatDueDateTime(item.dueDate, item.dueTime)}

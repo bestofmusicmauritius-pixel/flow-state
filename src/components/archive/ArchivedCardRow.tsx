@@ -35,6 +35,11 @@ export function ArchivedCardRow({ projectId, projectName, card }: ArchivedCardRo
         </span>
       )}
       <span className="text-text-muted truncate flex-1">{card.title}</span>
+      {card.tags && card.tags.length > 0 && (
+        <span className="shrink-0 text-xs text-text-faint">
+          {card.tags.map((tag) => `#${tag}`).join(" ")}
+        </span>
+      )}
       <Button variant="ghost" size="sm" onClick={() => setConfirmingDelete(true)}>
         delete forever
       </Button>

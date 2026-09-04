@@ -131,6 +131,7 @@ export function useAppState() {
         priority?: Priority;
         dueDate?: string;
         dueTime?: string;
+        tags?: string[];
       }
     ) => {
       const trimmed = title.trim();
@@ -146,6 +147,7 @@ export function useAppState() {
           priority: options?.priority,
           dueDate: options?.dueDate,
           dueTime: options?.dueDate ? options?.dueTime : undefined,
+          tags: options?.tags?.length ? options.tags : undefined,
           createdAt: now,
           updatedAt: now,
         };
@@ -164,6 +166,7 @@ export function useAppState() {
         priority?: Priority | null;
         dueDate?: string | null;
         dueTime?: string | null;
+        tags?: string[];
       }
     ) => {
       updateActiveProject((project) => ({
@@ -187,6 +190,9 @@ export function useAppState() {
                   : patch.dueTime !== undefined
                     ? { dueTime: patch.dueTime ?? undefined }
                     : {}),
+                ...(patch.tags !== undefined
+                  ? { tags: patch.tags.length ? patch.tags : undefined }
+                  : {}),
                 updatedAt: new Date().toISOString(),
               }
             : card
@@ -397,7 +403,12 @@ export function useAppState() {
   const updateTodo = useCallback(
     (
       id: string,
-      patch: { priority?: Priority | null; dueDate?: string | null; dueTime?: string | null }
+      patch: {
+        priority?: Priority | null;
+        dueDate?: string | null;
+        dueTime?: string | null;
+        tags?: string[];
+      }
     ) => {
       updateActiveProject((project) => ({
         ...project,
@@ -413,6 +424,9 @@ export function useAppState() {
                       dueDate: patch.dueDate ?? undefined,
                       dueTime: patch.dueDate ? (patch.dueTime ?? undefined) : undefined,
                     }
+                  : {}),
+                ...(patch.tags !== undefined
+                  ? { tags: patch.tags.length ? patch.tags : undefined }
                   : {}),
               }
             : todo
