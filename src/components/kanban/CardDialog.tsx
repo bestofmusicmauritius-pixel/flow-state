@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { TagEditor } from "@/components/ui/TagEditor";
+import { MarkdownPreview } from "@/components/kanban/MarkdownPreview";
 import { PRIORITY_COLOR, PRIORITY_TAG } from "@/lib/priority";
-import { PRIORITIES, type Priority } from "@/types";
+import { PRIORITIES, RECURRENCES, type Priority, type Recurrence } from "@/types";
 
 export interface CardDialogSubmitValues {
   title: string;
@@ -16,6 +17,7 @@ export interface CardDialogSubmitValues {
   priority: Priority | null;
   dueDate: string | null;
   dueTime: string | null;
+  recurrence: Recurrence | null;
   tags: string[];
 }
 
@@ -27,6 +29,7 @@ interface CardDialogProps {
   initialPriority?: Priority;
   initialDueDate?: string;
   initialDueTime?: string;
+  initialRecurrence?: Recurrence;
   initialTags?: string[];
   onClose: () => void;
   onSubmit: (values: CardDialogSubmitValues) => void;
@@ -42,6 +45,7 @@ export function CardDialog({
   initialPriority,
   initialDueDate,
   initialDueTime,
+  initialRecurrence,
   initialTags,
   onClose,
   onSubmit,
@@ -53,7 +57,9 @@ export function CardDialog({
   const [priority, setPriority] = useState<Priority | null>(initialPriority ?? null);
   const [dueDate, setDueDate] = useState<string>(initialDueDate ?? "");
   const [dueTime, setDueTime] = useState<string>(initialDueTime ?? "");
+  const [recurrence, setRecurrence] = useState<Recurrence | null>(initialRecurrence ?? null);
   const [tags, setTags] = useState<string[]>(initialTags ?? []);
+  const [descriptionTab, setDescriptionTab] = useState<"write" | "preview">("write");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,6 +70,7 @@ export function CardDialog({
       priority,
       dueDate: dueDate || null,
       dueTime: dueDate ? dueTime || null : null,
+      recurrence: dueDate ? recurrence : null,
       tags,
     });
     onClose();
@@ -79,12 +86,47 @@ export function CardDialog({
           placeholder="Task title"
           maxLength={120}
         />
-        <Textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Description (optional)"
-          rows={4}
-        />
+        <div>
+          <div className="flex items-center gap-1 mb-1.5">
+            <button
+              type="button"
+              onClick={() => setDescriptionTab("write")}
+              className={clsx(
+                "font-mono text-xs px-1.5 py-0.5 rounded-sm transition-colors",
+                descriptionTab === "write"
+                  ? "text-text-primary bg-bg-card"
+                  : "text-text-faint hover:text-text-muted"
+              )}
+            >
+              write
+            </button>
+            <button
+              type="button"
+              onClick={() => setDescriptionTab("preview")}
+              className={clsx(
+                "font-mono text-xs px-1.5 py-0.5 rounded-sm transition-colors",
+                descriptionTab === "preview"
+                  ? "text-text-primary bg-bg-card"
+                  : "text-text-faint hover:text-text-muted"
+              )}
+            >
+              preview
+            </button>
+            <span className="font-mono text-xs text-text-faint ml-1">markdown supported</span>
+          </div>
+          {descriptionTab === "write" ? (
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description (optional) — supports markdown"
+              rows={4}
+            />
+          ) : (
+            <div className="border border-border rounded-sm px-2.5 py-1.5 bg-bg-base min-h-[6.5rem]">
+              <MarkdownPreview text={description} />
+            </div>
+          )}
+        </div>
         <div>
           <p className="font-mono text-xs text-text-faint mb-1.5">{"// priority"}</p>
           <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Priority">
@@ -144,6 +186,7 @@ export function CardDialog({
                 onClick={() => {
                   setDueDate("");
                   setDueTime("");
+                  setRecurrence(null);
                 }}
                 className="font-mono text-xs px-2 py-1 rounded-sm border border-border text-text-faint hover:border-border-strong hover:text-text-primary transition-colors"
               >
@@ -152,6 +195,44 @@ export function CardDialog({
             )}
           </div>
         </div>
+        {dueDate && (
+          <div>
+            <p className="font-mono text-xs text-text-faint mb-1.5">{"// repeats"}</p>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Repeats">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={recurrence === null}
+                onClick={() => setRecurrence(null)}
+                className={clsx(
+                  "font-mono text-xs px-2 py-1 rounded-sm border transition-colors",
+                  recurrence === null
+                    ? "border-border-strong text-text-primary bg-bg-card"
+                    : "border-border text-text-faint hover:border-border-strong"
+                )}
+              >
+                none
+              </button>
+              {RECURRENCES.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={recurrence === r.id}
+                  onClick={() => setRecurrence(r.id)}
+                  className={clsx(
+                    "font-mono text-xs px-2 py-1 rounded-sm border transition-colors",
+                    recurrence === r.id
+                      ? "border-border-strong text-text-primary bg-bg-card"
+                      : "border-border text-text-faint hover:border-border-strong"
+                  )}
+                >
+                  ↻ {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div>
           <p className="font-mono text-xs text-text-faint mb-1.5">{"// tags"}</p>
           <TagEditor tags={tags} onChange={setTags} />

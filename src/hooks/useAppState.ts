@@ -2,11 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createId } from "@/lib/id";
+import { nextDueDate } from "@/lib/recurrence";
 import { moveCardToColumn, nextOrderInColumn, reorderCardsInColumn } from "@/lib/reorder";
 import { createEmptyProject, seedState } from "@/lib/seed";
 import { localStorageStore } from "@/lib/storage";
 import { projectHasTag } from "@/lib/tags";
-import type { AppState, ColumnId, KanbanCard, Priority, Project, TodoItem } from "@/types";
+import type {
+  AppState,
+  ColumnId,
+  KanbanCard,
+  Priority,
+  Project,
+  Recurrence,
+  TodoItem,
+} from "@/types";
 
 export function useAppState() {
   const [state, setState] = useState<AppState>(seedState);
@@ -132,6 +141,7 @@ export function useAppState() {
         priority?: Priority;
         dueDate?: string;
         dueTime?: string;
+        recurrence?: Recurrence;
         tags?: string[];
       }
     ) => {
@@ -148,6 +158,7 @@ export function useAppState() {
           priority: options?.priority,
           dueDate: options?.dueDate,
           dueTime: options?.dueDate ? options?.dueTime : undefined,
+          recurrence: options?.dueDate ? options?.recurrence : undefined,
           tags: options?.tags?.length ? options.tags : undefined,
           createdAt: now,
           updatedAt: now,
@@ -167,6 +178,7 @@ export function useAppState() {
         priority?: Priority | null;
         dueDate?: string | null;
         dueTime?: string | null;
+        recurrence?: Recurrence | null;
         tags?: string[];
       }
     ) => {
@@ -187,10 +199,14 @@ export function useAppState() {
                   ? {
                       dueDate: patch.dueDate ?? undefined,
                       dueTime: patch.dueDate ? (patch.dueTime ?? undefined) : undefined,
+                      recurrence: patch.dueDate ? (patch.recurrence ?? undefined) : undefined,
                     }
-                  : patch.dueTime !== undefined
-                    ? { dueTime: patch.dueTime ?? undefined }
-                    : {}),
+                  : {
+                      ...(patch.dueTime !== undefined ? { dueTime: patch.dueTime ?? undefined } : {}),
+                      ...(patch.recurrence !== undefined
+                        ? { recurrence: patch.recurrence ?? undefined }
+                        : {}),
+                    }),
                 ...(patch.tags !== undefined
                   ? { tags: patch.tags.length ? patch.tags : undefined }
                   : {}),
@@ -230,6 +246,40 @@ export function useAppState() {
         ...project,
         cards: moveCardToColumn(project.cards, cardId, toColumn, toIndex),
       }));
+    },
+    [updateActiveProject]
+  );
+
+  /**
+   * Instead of letting a recurring card sit in Complete, advances its due
+   * date and sends it back to Todo — the same "check it off and it resets"
+   * pattern as recurring todos, so recurring cards don't need archiving.
+   *
+   * Deliberately NOT folded into moveCard: the board calls moveCard on every
+   * column onDragOver (for the live drag-across-columns preview), not just
+   * on drop, so baking recurrence in there would advance a card's due date
+   * the moment it's dragged over Complete, even if the user drags back out
+   * without dropping. This is only ever called from onDragEnd, after a real
+   * drop has landed a card in Complete.
+   */
+  const advanceRecurringCard = useCallback(
+    (cardId: string) => {
+      updateActiveProject((project) => {
+        const card = project.cards.find((c) => c.id === cardId);
+        if (!card || !card.recurrence || !card.dueDate) return project;
+        const advancedCards = project.cards.map((c) =>
+          c.id === cardId ? { ...c, dueDate: nextDueDate(card.dueDate!, card.recurrence!) } : c
+        );
+        return {
+          ...project,
+          cards: moveCardToColumn(
+            advancedCards,
+            cardId,
+            "todo",
+            nextOrderInColumn(advancedCards, "todo")
+          ),
+        };
+      });
     },
     [updateActiveProject]
   );
@@ -345,7 +395,16 @@ export function useAppState() {
   // --- Todos ---
 
   const addTodo = useCallback(
-    (text: string) => {
+    (
+      text: string,
+      options?: {
+        priority?: Priority;
+        dueDate?: string;
+        dueTime?: string;
+        recurrence?: Recurrence;
+        tags?: string[];
+      }
+    ) => {
       const trimmed = text.trim();
       if (!trimmed) return;
       updateActiveProject((project) => {
@@ -359,6 +418,11 @@ export function useAppState() {
               text: trimmed,
               done: false,
               order: maxOrder + 1,
+              priority: options?.priority,
+              dueDate: options?.dueDate,
+              dueTime: options?.dueDate ? options?.dueTime : undefined,
+              recurrence: options?.dueDate ? options?.recurrence : undefined,
+              tags: options?.tags?.length ? options.tags : undefined,
               createdAt: new Date().toISOString(),
             },
           ],
@@ -368,13 +432,24 @@ export function useAppState() {
     [updateActiveProject]
   );
 
+  /**
+   * Checking off a recurring todo advances its due date and leaves it
+   * unchecked (the "recurring checklist" pattern) instead of marking it
+   * done — so it doesn't need re-adding every day/week/month. Unchecking
+   * an already-done todo, or toggling one with no recurrence or due date,
+   * behaves as a plain toggle.
+   */
   const toggleTodo = useCallback(
     (id: string) => {
       updateActiveProject((project) => ({
         ...project,
-        todos: project.todos.map((todo) =>
-          todo.id === id ? { ...todo, done: !todo.done } : todo
-        ),
+        todos: project.todos.map((todo) => {
+          if (todo.id !== id) return todo;
+          if (!todo.done && todo.recurrence && todo.dueDate) {
+            return { ...todo, dueDate: nextDueDate(todo.dueDate, todo.recurrence) };
+          }
+          return { ...todo, done: !todo.done };
+        }),
       }));
     },
     [updateActiveProject]
@@ -408,6 +483,7 @@ export function useAppState() {
         priority?: Priority | null;
         dueDate?: string | null;
         dueTime?: string | null;
+        recurrence?: Recurrence | null;
         tags?: string[];
       }
     ) => {
@@ -424,8 +500,13 @@ export function useAppState() {
                   ? {
                       dueDate: patch.dueDate ?? undefined,
                       dueTime: patch.dueDate ? (patch.dueTime ?? undefined) : undefined,
+                      recurrence: patch.dueDate ? (patch.recurrence ?? undefined) : undefined,
                     }
-                  : {}),
+                  : {
+                      ...(patch.recurrence !== undefined
+                        ? { recurrence: patch.recurrence ?? undefined }
+                        : {}),
+                    }),
                 ...(patch.tags !== undefined
                   ? { tags: patch.tags.length ? patch.tags : undefined }
                   : {}),
@@ -526,6 +607,7 @@ export function useAppState() {
     deleteCard,
     undoDeleteCard,
     moveCard,
+    advanceRecurringCard,
     reorderCards,
     archiveCard,
     archiveCompletedCards,

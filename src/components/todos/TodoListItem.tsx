@@ -8,14 +8,18 @@ import { IconButton } from "@/components/ui/IconButton";
 import { TagEditor } from "@/components/ui/TagEditor";
 import { getDueUrgency, formatDueDateTime, DUE_COLOR, DUE_LABEL } from "@/lib/dueDate";
 import { PRIORITY_COLOR, PRIORITY_TAG } from "@/lib/priority";
-import { PRIORITIES, type Priority, type TodoItem } from "@/types";
+import { PRIORITIES, RECURRENCES, type Priority, type Recurrence, type TodoItem } from "@/types";
 
 interface TodoListItemProps {
   todo: TodoItem;
   onToggle: () => void;
   onDelete: () => void;
   onChangePriority: (priority: Priority | null) => void;
-  onChangeDueDate: (dueDate: string | null, dueTime: string | null) => void;
+  onChangeDueDate: (
+    dueDate: string | null,
+    dueTime: string | null,
+    recurrence: Recurrence | null
+  ) => void;
   onChangeTags: (tags: string[]) => void;
 }
 
@@ -35,6 +39,7 @@ export function TodoListItem({
   const [tagsMenuOpen, setTagsMenuOpen] = useState(false);
   const [draftDate, setDraftDate] = useState("");
   const [draftTime, setDraftTime] = useState("");
+  const [draftRecurrence, setDraftRecurrence] = useState<Recurrence | null>(null);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -46,6 +51,7 @@ export function TodoListItem({
   function openDueMenu() {
     setDraftDate(todo.dueDate ?? "");
     setDraftTime(todo.dueTime ?? "");
+    setDraftRecurrence(todo.recurrence ?? null);
     setDueMenuOpen(true);
   }
 
@@ -156,7 +162,7 @@ export function TodoListItem({
             )}
           >
             {urgency && todo.dueDate
-              ? `${DUE_LABEL[urgency]} ${formatDueDateTime(todo.dueDate, todo.dueTime)}`
+              ? `${todo.recurrence ? "↻ " : ""}${DUE_LABEL[urgency]} ${formatDueDateTime(todo.dueDate, todo.dueTime)}`
               : "+ due"}
           </button>
           {dueMenuOpen && (
@@ -180,12 +186,43 @@ export function TodoListItem({
                     />
                   )}
                 </div>
+                {draftDate && (
+                  <div className="flex flex-wrap gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setDraftRecurrence(null)}
+                      className={clsx(
+                        "px-1.5 py-0.5 rounded-sm border",
+                        draftRecurrence === null
+                          ? "border-border-strong text-text-primary bg-bg-card"
+                          : "border-border text-text-faint hover:border-border-strong"
+                      )}
+                    >
+                      none
+                    </button>
+                    {RECURRENCES.map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setDraftRecurrence(r.id)}
+                        className={clsx(
+                          "px-1.5 py-0.5 rounded-sm border",
+                          draftRecurrence === r.id
+                            ? "border-border-strong text-text-primary bg-bg-card"
+                            : "border-border text-text-faint hover:border-border-strong"
+                        )}
+                      >
+                        ↻ {r.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="flex justify-end gap-1.5">
                   {todo.dueDate && (
                     <button
                       type="button"
                       onClick={() => {
-                        onChangeDueDate(null, null);
+                        onChangeDueDate(null, null, null);
                         setDueMenuOpen(false);
                       }}
                       className="px-1.5 py-0.5 rounded-sm border border-border text-text-faint hover:border-border-strong"
@@ -196,7 +233,7 @@ export function TodoListItem({
                   <button
                     type="button"
                     onClick={() => {
-                      onChangeDueDate(draftDate || null, draftTime || null);
+                      onChangeDueDate(draftDate || null, draftTime || null, draftRecurrence);
                       setDueMenuOpen(false);
                     }}
                     disabled={!draftDate}

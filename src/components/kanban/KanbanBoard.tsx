@@ -47,6 +47,7 @@ export function KanbanBoard({
     deleteCard,
     undoDeleteCard,
     moveCard,
+    advanceRecurringCard,
     reorderCards,
     archiveCard,
     archiveCompletedCards,
@@ -137,8 +138,17 @@ export function KanbanBoard({
     if (!over) return;
 
     const draggedCard = cards.find((c) => c.id === active.id);
+    if (!draggedCard) return;
+
+    // Only fires on a confirmed drop, not the onDragOver hover-preview above —
+    // see advanceRecurringCard's comment for why that distinction matters.
+    if (draggedCard.column === "complete" && draggedCard.recurrence && draggedCard.dueDate) {
+      advanceRecurringCard(draggedCard.id);
+      return;
+    }
+
     const overColumn = resolveColumn(over.id as string);
-    if (!draggedCard || !overColumn || draggedCard.column !== overColumn) return;
+    if (!overColumn || draggedCard.column !== overColumn) return;
 
     const columnCards = cardsInColumn(overColumn);
     const fromIndex = columnCards.findIndex((c) => c.id === active.id);
@@ -170,6 +180,13 @@ export function KanbanBoard({
               cards={cardsInColumn(column.id)}
               sortMode={sortModes[column.id]}
               onAddCard={() => setCreatingColumn(column.id)}
+              onQuickAdd={(parsed) =>
+                addCard(column.id, parsed.title, {
+                  priority: parsed.priority ?? undefined,
+                  dueDate: parsed.dueDate ?? undefined,
+                  tags: parsed.tags,
+                })
+              }
               onCardClick={(cardId) => setEditingCardId(cardId)}
               onToggleSortMode={(mode) =>
                 setSortModes((prev) => ({ ...prev, [column.id]: mode }))
@@ -188,13 +205,14 @@ export function KanbanBoard({
         open={creatingColumn !== null}
         mode="create"
         onClose={() => setCreatingColumn(null)}
-        onSubmit={({ title, description, priority, dueDate, dueTime, tags }) => {
+        onSubmit={({ title, description, priority, dueDate, dueTime, recurrence, tags }) => {
           if (creatingColumn) {
             addCard(creatingColumn, title, {
               description,
               priority: priority ?? undefined,
               dueDate: dueDate ?? undefined,
               dueTime: dueTime ?? undefined,
+              recurrence: recurrence ?? undefined,
               tags,
             });
           }
@@ -210,11 +228,20 @@ export function KanbanBoard({
         initialPriority={editingCard?.priority}
         initialDueDate={editingCard?.dueDate}
         initialDueTime={editingCard?.dueTime}
+        initialRecurrence={editingCard?.recurrence}
         initialTags={editingCard?.tags}
         onClose={() => setEditingCardId(null)}
-        onSubmit={({ title, description, priority, dueDate, dueTime, tags }) => {
+        onSubmit={({ title, description, priority, dueDate, dueTime, recurrence, tags }) => {
           if (editingCardId) {
-            updateCard(editingCardId, { title, description, priority, dueDate, dueTime, tags });
+            updateCard(editingCardId, {
+              title,
+              description,
+              priority,
+              dueDate,
+              dueTime,
+              recurrence,
+              tags,
+            });
           }
         }}
         onDelete={() => {

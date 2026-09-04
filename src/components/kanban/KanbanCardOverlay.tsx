@@ -34,6 +34,7 @@ export function KanbanCardOverlay({ card }: { card: KanbanCardType }) {
             const urgency = getDueUrgency(card.dueDate, card.dueTime, card.column === "complete");
             return (
               <p className={clsx("mt-1.5 font-mono text-[11px]", DUE_COLOR[urgency])}>
+                {card.recurrence && "↻ "}
                 {DUE_LABEL[urgency]} {formatDueDateTime(card.dueDate, card.dueTime)}
               </p>
             );

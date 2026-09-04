@@ -21,6 +21,14 @@ export const PRIORITIES: { id: Priority; label: string }[] = [
   { id: "p3", label: "low" },
 ];
 
+export type Recurrence = "daily" | "weekly" | "monthly";
+
+export const RECURRENCES: { id: Recurrence; label: string }[] = [
+  { id: "daily", label: "daily" },
+  { id: "weekly", label: "weekly" },
+  { id: "monthly", label: "monthly" },
+];
+
 export interface KanbanCard {
   id: string;
   title: string;
@@ -30,6 +38,7 @@ export interface KanbanCard {
   priority?: Priority;
   dueDate?: string;
   dueTime?: string;
+  recurrence?: Recurrence;
   tags?: string[];
   createdAt: string;
   updatedAt: string;
@@ -44,6 +53,7 @@ export interface TodoItem {
   priority?: Priority;
   dueDate?: string;
   dueTime?: string;
+  recurrence?: Recurrence;
   tags?: string[];
   createdAt: string;
 }

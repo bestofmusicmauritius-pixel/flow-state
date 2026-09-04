@@ -20,6 +20,7 @@ import { useToast } from "@/context/ToastContext";
 import { TodoListItem } from "@/components/todos/TodoListItem";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
+import { parseQuickAdd } from "@/lib/quickAdd";
 
 export function TodoList() {
   const {
@@ -47,7 +48,13 @@ export function TodoList() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!draft.trim()) return;
-    addTodo(draft);
+    const parsed = parseQuickAdd(draft);
+    if (!parsed.title) return;
+    addTodo(parsed.title, {
+      priority: parsed.priority ?? undefined,
+      dueDate: parsed.dueDate ?? undefined,
+      tags: parsed.tags,
+    });
     setDraft("");
   }
 
@@ -86,7 +93,9 @@ export function TodoList() {
                     );
                   }}
                   onChangePriority={(priority) => updateTodo(todo.id, { priority })}
-                  onChangeDueDate={(dueDate, dueTime) => updateTodo(todo.id, { dueDate, dueTime })}
+                  onChangeDueDate={(dueDate, dueTime, recurrence) =>
+                    updateTodo(todo.id, { dueDate, dueTime, recurrence })
+                  }
                   onChangeTags={(tags) => updateTodo(todo.id, { tags })}
                 />
               ))}
@@ -98,7 +107,7 @@ export function TodoList() {
         <Input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Add a todo..."
+          placeholder="Add a todo... #tag !p1 @tomorrow"
         />
       </form>
     </div>

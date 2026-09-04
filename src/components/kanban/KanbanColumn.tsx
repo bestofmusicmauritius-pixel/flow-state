@@ -1,12 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import clsx from "clsx";
 import { KanbanCard } from "@/components/kanban/KanbanCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { IconButton } from "@/components/ui/IconButton";
+import { Input } from "@/components/ui/Input";
 import { compareByDueDate } from "@/lib/dueDate";
+import { parseQuickAdd, type QuickAddResult } from "@/lib/quickAdd";
 import { COLUMN_BRACKET, type ColumnId, type KanbanCard as KanbanCardType } from "@/types";
 
 export type SortMode = "manual" | "due";
@@ -17,6 +20,7 @@ interface KanbanColumnProps {
   cards: KanbanCardType[];
   sortMode: SortMode;
   onAddCard: () => void;
+  onQuickAdd: (parsed: QuickAddResult) => void;
   onCardClick: (cardId: string) => void;
   onToggleSortMode: (mode: SortMode) => void;
   onArchiveCompleted?: () => void;
@@ -28,13 +32,24 @@ export function KanbanColumn({
   cards,
   sortMode,
   onAddCard,
+  onQuickAdd,
   onCardClick,
   onToggleSortMode,
   onArchiveCompleted,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id, data: { type: "column" } });
+  const [draft, setDraft] = useState("");
   const displayedCards = sortMode === "due" ? [...cards].sort(compareByDueDate) : cards;
   const cardIds = displayedCards.map((c) => c.id);
+
+  function handleQuickAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!draft.trim()) return;
+    const parsed = parseQuickAdd(draft);
+    if (!parsed.title) return;
+    onQuickAdd(parsed);
+    setDraft("");
+  }
 
   return (
     <div className="flex flex-col min-h-0 w-80 shrink-0 bg-bg-elevated/60 rounded-md border border-border">
@@ -55,7 +70,7 @@ export function KanbanColumn({
               archive
             </button>
           )}
-          <IconButton aria-label={`Add task to ${title}`} onClick={onAddCard}>
+          <IconButton aria-label={`Open new task dialog for ${title}`} onClick={onAddCard}>
             +
           </IconButton>
         </div>
@@ -108,6 +123,14 @@ export function KanbanColumn({
           )}
         </SortableContext>
       </div>
+      <form onSubmit={handleQuickAdd} className="px-2 py-2 border-t border-border">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="+ quick add... #tag !p1 @tomorrow"
+          className="text-xs"
+        />
+      </form>
     </div>
   );
 }
