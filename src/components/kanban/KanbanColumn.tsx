@@ -7,13 +7,7 @@ import { KanbanCard } from "@/components/kanban/KanbanCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { IconButton } from "@/components/ui/IconButton";
 import { compareByDueDate } from "@/lib/dueDate";
-import type { ColumnId, KanbanCard as KanbanCardType } from "@/types";
-
-const BRACKET: Record<ColumnId, string> = {
-  todo: "[ ]",
-  "in-progress": "[~]",
-  complete: "[x]",
-};
+import { COLUMN_BRACKET, type ColumnId, type KanbanCard as KanbanCardType } from "@/types";
 
 export type SortMode = "manual" | "due";
 
@@ -44,7 +38,7 @@ export function KanbanColumn({
     <div className="flex flex-col min-h-0 w-80 shrink-0 bg-bg-elevated/60 rounded-md border border-border">
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
         <div className="flex items-baseline gap-1.5 font-mono text-sm">
-          <span className="text-text-muted">{BRACKET[id]}</span>
+          <span className="text-text-muted">{COLUMN_BRACKET[id]}</span>
           <span className="text-text-primary">{title}</span>
           <span className="text-text-faint text-xs">({cards.length})</span>
         </div>

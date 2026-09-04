@@ -6,6 +6,12 @@ export const COLUMNS: { id: ColumnId; title: string }[] = [
   { id: "complete", title: "complete" },
 ];
 
+export const COLUMN_BRACKET: Record<ColumnId, string> = {
+  todo: "[ ]",
+  "in-progress": "[~]",
+  complete: "[x]",
+};
+
 export type Priority = "p0" | "p1" | "p2" | "p3";
 
 export const PRIORITIES: { id: Priority; label: string }[] = [
