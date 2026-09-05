@@ -40,6 +40,8 @@ export interface KanbanCard {
   dueTime?: string;
   recurrence?: Recurrence;
   tags?: string[];
+  trackedSeconds?: number;
+  timerStartedAt?: string;
   createdAt: string;
   updatedAt: string;
   archivedAt?: string;

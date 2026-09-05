@@ -4,12 +4,14 @@ import { useState } from "react";
 import clsx from "clsx";
 import { ProjectSwitcher } from "@/components/project/ProjectSwitcher";
 import { SettingsDialog } from "@/components/layout/SettingsDialog";
+import { PomodoroWidget } from "@/components/layout/PomodoroWidget";
 
-export type View = "board" | "agenda" | "search" | "archive";
+export type View = "board" | "agenda" | "calendar" | "search" | "archive";
 
 const VIEWS: { id: View; label: string }[] = [
   { id: "board", label: "[board]" },
   { id: "agenda", label: "[agenda]" },
+  { id: "calendar", label: "[calendar]" },
   { id: "search", label: "[search]" },
   { id: "archive", label: "[archive]" },
 ];
@@ -59,6 +61,7 @@ export function TopBar({ view, onChangeView, onOpenPalette }: TopBarProps) {
             </button>
           ))}
         </div>
+        <PomodoroWidget />
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}

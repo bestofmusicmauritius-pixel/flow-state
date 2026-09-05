@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { elapsedSeconds } from "@/lib/format";
 import { createId } from "@/lib/id";
 import { nextDueDate } from "@/lib/recurrence";
 import { moveCardToColumn, nextOrderInColumn, reorderCardsInColumn } from "@/lib/reorder";
@@ -115,6 +116,15 @@ export function useAppState() {
   /** Re-inserts a whole deleted project and makes it active again — the
    * undo half of deleteProject. */
   const undoDeleteProject = useCallback((project: Project) => {
+    setState((prev) => ({
+      projects: [...prev.projects, project],
+      activeProjectId: project.id,
+    }));
+  }, []);
+
+  /** Adds an externally-built project (e.g. a Trello/Todoist import) and
+   * makes it active — same shape as undoDeleteProject, different caller. */
+  const importProject = useCallback((project: Project) => {
     setState((prev) => ({
       projects: [...prev.projects, project],
       activeProjectId: project.id,
@@ -248,6 +258,160 @@ export function useAppState() {
       }));
     },
     [updateActiveProject]
+  );
+
+  // --- Time tracking ---
+
+  /** Only one card's timer runs at a time — starting a new one banks
+   * whatever elapsed time the previously-running card had first, rather
+   * than letting two timers silently run in parallel. */
+  const startTimer = useCallback(
+    (cardId: string) => {
+      updateActiveProject((project) => {
+        const now = new Date().toISOString();
+        return {
+          ...project,
+          cards: project.cards.map((card) => {
+            if (card.id === cardId) {
+              return card.timerStartedAt ? card : { ...card, timerStartedAt: now };
+            }
+            if (card.timerStartedAt) {
+              return {
+                ...card,
+                trackedSeconds:
+                  (card.trackedSeconds ?? 0) + elapsedSeconds(card.timerStartedAt, now),
+                timerStartedAt: undefined,
+              };
+            }
+            return card;
+          }),
+        };
+      });
+    },
+    [updateActiveProject]
+  );
+
+  const stopTimer = useCallback(
+    (cardId: string) => {
+      updateActiveProject((project) => {
+        const now = new Date().toISOString();
+        return {
+          ...project,
+          cards: project.cards.map((card) =>
+            card.id === cardId && card.timerStartedAt
+              ? {
+                  ...card,
+                  trackedSeconds:
+                    (card.trackedSeconds ?? 0) + elapsedSeconds(card.timerStartedAt, now),
+                  timerStartedAt: undefined,
+                }
+              : card
+          ),
+        };
+      });
+    },
+    [updateActiveProject]
+  );
+
+  const resetTimer = useCallback(
+    (cardId: string) => {
+      updateActiveProject((project) => ({
+        ...project,
+        cards: project.cards.map((card) =>
+          card.id === cardId ? { ...card, trackedSeconds: 0, timerStartedAt: undefined } : card
+        ),
+      }));
+    },
+    [updateActiveProject]
+  );
+
+  // --- Bulk card actions (multi-select) ---
+
+  /** Appends each selected card to the end of toColumn, in one state update
+   * so every card's order is computed against the others' final positions
+   * rather than a stale snapshot from separate calls. */
+  const bulkMoveCards = useCallback(
+    (cardIds: string[], toColumn: ColumnId) => {
+      updateActiveProject((project) => {
+        let cards = project.cards;
+        for (const id of cardIds) {
+          cards = moveCardToColumn(cards, id, toColumn, nextOrderInColumn(cards, toColumn));
+        }
+        return { ...project, cards };
+      });
+    },
+    [updateActiveProject]
+  );
+
+  const bulkSetPriority = useCallback(
+    (cardIds: string[], priority: Priority | null) => {
+      const idSet = new Set(cardIds);
+      updateActiveProject((project) => ({
+        ...project,
+        cards: project.cards.map((c) =>
+          idSet.has(c.id) ? { ...c, priority: priority ?? undefined } : c
+        ),
+      }));
+    },
+    [updateActiveProject]
+  );
+
+  /** tag must already be normalized by the caller (same convention as
+   * renameTagEverywhere) — this just appends it, deduped, to each card. */
+  const bulkAddTag = useCallback(
+    (cardIds: string[], tag: string) => {
+      const idSet = new Set(cardIds);
+      updateActiveProject((project) => ({
+        ...project,
+        cards: project.cards.map((c) =>
+          idSet.has(c.id) ? { ...c, tags: [...new Set([...(c.tags ?? []), tag])] } : c
+        ),
+      }));
+    },
+    [updateActiveProject]
+  );
+
+  const bulkArchiveCards = useCallback(
+    (cardIds: string[]) => {
+      const idSet = new Set(cardIds);
+      updateActiveProject((project) => {
+        const toArchive = project.cards.filter((c) => idSet.has(c.id));
+        if (toArchive.length === 0) return project;
+        const now = new Date().toISOString();
+        return {
+          ...project,
+          cards: project.cards.filter((c) => !idSet.has(c.id)),
+          archivedCards: [
+            ...project.archivedCards,
+            ...toArchive.map((c) => ({ ...c, archivedAt: now })),
+          ],
+        };
+      });
+    },
+    [updateActiveProject]
+  );
+
+  const bulkDeleteCards = useCallback(
+    (cardIds: string[]) => {
+      const idSet = new Set(cardIds);
+      updateActiveProject((project) => ({
+        ...project,
+        cards: project.cards.filter((c) => !idSet.has(c.id)),
+      }));
+    },
+    [updateActiveProject]
+  );
+
+  /** Re-inserts a batch of cards exactly as they were — the undo half of
+   * bulkDeleteCards (bulkArchiveCards reuses the existing restoreCards). */
+  const bulkUndoDeleteCards = useCallback(
+    (projectId: string, deletedCards: KanbanCard[]) => {
+      updateProjectById(projectId, (project) => ({
+        ...project,
+        cards: [...project.cards, ...deletedCards],
+      }));
+    },
+    [updateProjectById]
   );
 
   /**
@@ -611,6 +775,7 @@ export function useAppState() {
     renameProject,
     deleteProject,
     undoDeleteProject,
+    importProject,
     setActiveProject,
     addCard,
     updateCard,
@@ -620,6 +785,15 @@ export function useAppState() {
     advanceRecurringCard,
     replaceCards,
     reorderCards,
+    startTimer,
+    stopTimer,
+    resetTimer,
+    bulkMoveCards,
+    bulkSetPriority,
+    bulkAddTag,
+    bulkArchiveCards,
+    bulkDeleteCards,
+    bulkUndoDeleteCards,
     archiveCard,
     archiveCompletedCards,
     restoreCard,

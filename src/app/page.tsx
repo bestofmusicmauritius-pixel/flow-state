@@ -6,6 +6,7 @@ import { TopBar, type View } from "@/components/layout/TopBar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { AgendaView } from "@/components/agenda/AgendaView";
+import { CalendarView } from "@/components/calendar/CalendarView";
 import { SearchView } from "@/components/search/SearchView";
 import { ArchiveView } from "@/components/archive/ArchiveView";
 import { ShortcutsHelpDialog } from "@/components/layout/ShortcutsHelpDialog";
@@ -13,6 +14,7 @@ import { CommandPalette, type PaletteAction } from "@/components/layout/CommandP
 import { ProjectDialog } from "@/components/project/ProjectDialog";
 import { Button } from "@/components/ui/Button";
 import { BackupControls } from "@/components/layout/BackupControls";
+import { ImportControls } from "@/components/layout/ImportControls";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 export default function Home() {
@@ -39,6 +41,7 @@ export default function Home() {
   const paletteActions: PaletteAction[] = [
     { id: "view-board", label: "Go to board", hint: "b", run: () => setView("board") },
     { id: "view-agenda", label: "Go to agenda", hint: "a", run: () => setView("agenda") },
+    { id: "view-calendar", label: "Go to calendar", run: () => setView("calendar") },
     { id: "view-search", label: "Go to search", hint: "/", run: () => setView("search") },
     { id: "view-archive", label: "Go to archive", run: () => setView("archive") },
     {
@@ -81,6 +84,7 @@ export default function Home() {
         </Button>
         <p className="font-mono text-xs text-text-faint">or</p>
         <BackupControls showExport={false} />
+        <ImportControls />
         <ProjectDialog
           key={createOpen ? "create-open" : "create-closed"}
           open={createOpen}
@@ -123,6 +127,7 @@ export default function Home() {
         </div>
       )}
       {view === "agenda" && <AgendaView onJumpToItem={jumpToItem} />}
+      {view === "calendar" && <CalendarView onJumpToItem={jumpToItem} />}
       {view === "search" && <SearchView onJumpToItem={jumpToItem} />}
       {view === "archive" && <ArchiveView />}
       <ShortcutsHelpDialog open={showShortcutsHelp} onClose={() => setShowShortcutsHelp(false)} />

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { TagEditor } from "@/components/ui/TagEditor";
+import { CardTimer } from "@/components/kanban/CardTimer";
 import { MarkdownPreview } from "@/components/kanban/MarkdownPreview";
 import { PRIORITY_COLOR, PRIORITY_TAG } from "@/lib/priority";
 import { PRIORITIES, RECURRENCES, type Priority, type Recurrence } from "@/types";
@@ -31,10 +32,15 @@ interface CardDialogProps {
   initialDueTime?: string;
   initialRecurrence?: Recurrence;
   initialTags?: string[];
+  trackedSeconds?: number;
+  timerStartedAt?: string;
   onClose: () => void;
   onSubmit: (values: CardDialogSubmitValues) => void;
   onDelete?: () => void;
   onArchive?: () => void;
+  onStartTimer?: () => void;
+  onStopTimer?: () => void;
+  onResetTimer?: () => void;
 }
 
 export function CardDialog({
@@ -47,10 +53,15 @@ export function CardDialog({
   initialDueTime,
   initialRecurrence,
   initialTags,
+  trackedSeconds,
+  timerStartedAt,
   onClose,
   onSubmit,
   onDelete,
   onArchive,
+  onStartTimer,
+  onStopTimer,
+  onResetTimer,
 }: CardDialogProps) {
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
@@ -86,6 +97,19 @@ export function CardDialog({
           placeholder="Task title"
           maxLength={120}
         />
+        {mode === "edit" && onStartTimer && onStopTimer && (
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-xs text-text-faint">{"// time tracked"}</span>
+            <CardTimer
+              trackedSeconds={trackedSeconds}
+              timerStartedAt={timerStartedAt}
+              onStart={onStartTimer}
+              onStop={onStopTimer}
+              onReset={onResetTimer}
+              size="md"
+            />
+          </div>
+        )}
         <div>
           <div className="flex items-center gap-1 mb-1.5">
             <button

@@ -24,6 +24,11 @@ interface KanbanColumnProps {
   onCardClick: (cardId: string) => void;
   onToggleSortMode: (mode: SortMode) => void;
   onArchiveCompleted?: () => void;
+  selectMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (cardId: string) => void;
+  onStartTimer?: (cardId: string) => void;
+  onStopTimer?: (cardId: string) => void;
 }
 
 export function KanbanColumn({
@@ -36,6 +41,11 @@ export function KanbanColumn({
   onCardClick,
   onToggleSortMode,
   onArchiveCompleted,
+  selectMode = false,
+  selectedIds,
+  onToggleSelect,
+  onStartTimer,
+  onStopTimer,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id, data: { type: "column" } });
   const [draft, setDraft] = useState("");
@@ -128,7 +138,12 @@ export function KanbanColumn({
                 key={card.id}
                 card={card}
                 onClick={() => onCardClick(card.id)}
-                draggable={sortMode === "manual"}
+                draggable={sortMode === "manual" && !selectMode}
+                selectMode={selectMode}
+                selected={selectedIds?.has(card.id)}
+                onToggleSelect={() => onToggleSelect?.(card.id)}
+                onStartTimer={onStartTimer ? () => onStartTimer(card.id) : undefined}
+                onStopTimer={onStopTimer ? () => onStopTimer(card.id) : undefined}
               />
             ))
           )}

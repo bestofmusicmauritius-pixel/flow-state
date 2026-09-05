@@ -3,6 +3,7 @@
 import { Dialog } from "@/components/ui/Dialog";
 import { NotificationControls } from "@/components/layout/NotificationControls";
 import { BackupControls } from "@/components/layout/BackupControls";
+import { ImportControls } from "@/components/layout/ImportControls";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -20,6 +21,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         <div>
           <p className="font-mono text-xs text-text-faint mb-1.5">{"// backup"}</p>
           <BackupControls />
+        </div>
+        <div>
+          <p className="font-mono text-xs text-text-faint mb-1.5">{"// import"}</p>
+          <ImportControls />
         </div>
       </div>
     </Dialog>

@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
+import { CardTimer } from "@/components/kanban/CardTimer";
 import { getDueUrgency, formatDueDateTime, DUE_COLOR, DUE_LABEL } from "@/lib/dueDate";
 import { formatRelativeTime } from "@/lib/format";
 import { PRIORITY_COLOR, PRIORITY_TAG } from "@/lib/priority";
@@ -12,9 +13,23 @@ interface KanbanCardProps {
   card: KanbanCardType;
   onClick: () => void;
   draggable?: boolean;
+  selectMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+  onStartTimer?: () => void;
+  onStopTimer?: () => void;
 }
 
-export function KanbanCard({ card, onClick, draggable = true }: KanbanCardProps) {
+export function KanbanCard({
+  card,
+  onClick,
+  draggable = true,
+  selectMode = false,
+  selected = false,
+  onToggleSelect,
+  onStartTimer,
+  onStopTimer,
+}: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: { type: "card", column: card.column },
@@ -30,36 +45,49 @@ export function KanbanCard({ card, onClick, draggable = true }: KanbanCardProps)
     <div
       ref={setNodeRef}
       style={style}
-      onClick={onClick}
+      onClick={selectMode ? onToggleSelect : onClick}
       tabIndex={0}
       role="button"
       onKeyDown={(e) => {
-        if (e.key === "Enter") onClick();
+        if (e.key === "Enter") (selectMode ? onToggleSelect : onClick)?.();
       }}
       className={clsx(
-        "group bg-bg-card border border-border rounded-sm cursor-default transition-[border-color,box-shadow]",
-        "hover:border-accent/50",
+        "group bg-bg-card border rounded-sm cursor-default transition-[border-color,box-shadow]",
+        selected ? "border-accent" : "border-border hover:border-accent/50",
         "focus:outline-none focus-visible:border-accent focus-visible:shadow-[0_0_0_1px_var(--color-accent)]",
         isDragging && "opacity-30"
       )}
     >
       <div className="flex items-stretch">
-        <button
-          type="button"
-          {...(draggable ? attributes : {})}
-          {...(draggable ? listeners : {})}
-          onClick={(e) => e.stopPropagation()}
-          disabled={!draggable}
-          aria-label="Drag to reorder"
-          className={clsx(
-            "shrink-0 w-3 flex items-center justify-center font-mono text-sm leading-none",
-            draggable
-              ? "text-text-faint hover:text-accent cursor-grab active:cursor-grabbing"
-              : "text-border-strong cursor-not-allowed"
-          )}
-        >
-          │
-        </button>
+        {selectMode ? (
+          <div className="shrink-0 w-3 flex items-center justify-center">
+            <span
+              className={clsx(
+                "w-3 h-3 rounded-sm border flex items-center justify-center",
+                selected ? "bg-accent border-accent text-bg-base" : "border-border-strong"
+              )}
+            >
+              {selected && <span className="text-[9px] leading-none">✓</span>}
+            </span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            {...(draggable ? attributes : {})}
+            {...(draggable ? listeners : {})}
+            onClick={(e) => e.stopPropagation()}
+            disabled={!draggable}
+            aria-label="Drag to reorder"
+            className={clsx(
+              "shrink-0 w-3 flex items-center justify-center font-mono text-sm leading-none",
+              draggable
+                ? "text-text-faint hover:text-accent cursor-grab active:cursor-grabbing"
+                : "text-border-strong cursor-not-allowed"
+            )}
+          >
+            │
+          </button>
+        )}
         <div className="flex-1 min-w-0 py-2.5 pr-3">
           <p className="text-sm font-mono text-text-primary break-words">
             {card.priority && (
@@ -89,9 +117,19 @@ export function KanbanCard({ card, onClick, draggable = true }: KanbanCardProps)
                 </p>
               );
             })()}
-          <p className="mt-1 font-mono text-[11px] text-text-faint">
-            {formatRelativeTime(card.updatedAt)}
-          </p>
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <p className="font-mono text-[11px] text-text-faint">
+              {formatRelativeTime(card.updatedAt)}
+            </p>
+            {!selectMode && onStartTimer && onStopTimer && (
+              <CardTimer
+                trackedSeconds={card.trackedSeconds}
+                timerStartedAt={card.timerStartedAt}
+                onStart={onStartTimer}
+                onStop={onStopTimer}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

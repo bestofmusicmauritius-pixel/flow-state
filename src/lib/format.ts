@@ -20,3 +20,17 @@ export function formatRelativeTime(iso: string): string {
     year: "numeric",
   });
 }
+
+export function elapsedSeconds(startIso: string, endIso: string): number {
+  return Math.max(0, Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 1000));
+}
+
+export function formatDuration(totalSeconds: number): string {
+  const s = Math.max(0, Math.round(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
+  if (m > 0) return `${m}m ${String(sec).padStart(2, "0")}s`;
+  return `${sec}s`;
+}

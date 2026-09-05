@@ -18,10 +18,11 @@ import { useAppStateContext } from "@/context/AppStateContext";
 import { useToast } from "@/context/ToastContext";
 import { KanbanColumn, type SortMode } from "@/components/kanban/KanbanColumn";
 import { KanbanCardOverlay } from "@/components/kanban/KanbanCardOverlay";
+import { BulkActionBar } from "@/components/kanban/BulkActionBar";
 import { CardDialog } from "@/components/kanban/CardDialog";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { COLUMNS, type ColumnId, type KanbanCard as KanbanCardType } from "@/types";
+import { COLUMNS, type ColumnId, type KanbanCard as KanbanCardType, type Priority } from "@/types";
 
 interface KanbanBoardProps {
   /** Deep-link request from elsewhere (e.g. the agenda view) to open a
@@ -54,6 +55,15 @@ export function KanbanBoard({
     archiveCompletedCards,
     restoreCard,
     restoreCards,
+    bulkMoveCards,
+    bulkSetPriority,
+    bulkAddTag,
+    bulkArchiveCards,
+    bulkDeleteCards,
+    bulkUndoDeleteCards,
+    startTimer,
+    stopTimer,
+    resetTimer,
   } = useAppStateContext();
   const { showToast } = useToast();
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
@@ -66,6 +76,8 @@ export function KanbanBoard({
     "in-progress": "manual",
     complete: "manual",
   });
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -118,6 +130,68 @@ export function KanbanBoard({
 
   const activeCard = cards.find((c) => c.id === activeCardId) ?? null;
   const editingCard = cards.find((c) => c.id === editingCardId) ?? null;
+
+  function toggleCardSelection(cardId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(cardId)) next.delete(cardId);
+      else next.add(cardId);
+      return next;
+    });
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }
+
+  function handleBulkMove(column: ColumnId) {
+    const snapshot = cards;
+    const count = selectedIds.size;
+    bulkMoveCards(Array.from(selectedIds), column);
+    showToast(`${count} card${count === 1 ? "" : "s"} moved to ${column}`, () =>
+      replaceCards(projectId, snapshot)
+    );
+    setSelectedIds(new Set());
+  }
+
+  function handleBulkSetPriority(priority: Priority | null) {
+    const snapshot = cards;
+    const count = selectedIds.size;
+    bulkSetPriority(Array.from(selectedIds), priority);
+    showToast(`priority updated on ${count} card${count === 1 ? "" : "s"}`, () =>
+      replaceCards(projectId, snapshot)
+    );
+    setSelectedIds(new Set());
+  }
+
+  function handleBulkAddTag(tag: string) {
+    const snapshot = cards;
+    const count = selectedIds.size;
+    bulkAddTag(Array.from(selectedIds), tag);
+    showToast(`tag added to ${count} card${count === 1 ? "" : "s"}`, () =>
+      replaceCards(projectId, snapshot)
+    );
+    setSelectedIds(new Set());
+  }
+
+  function handleBulkArchive() {
+    const ids = Array.from(selectedIds);
+    bulkArchiveCards(ids);
+    showToast(`${ids.length} card${ids.length === 1 ? "" : "s"} archived`, () =>
+      restoreCards(projectId, ids)
+    );
+    setSelectedIds(new Set());
+  }
+
+  function handleBulkDelete() {
+    const deletedCards = cards.filter((c) => selectedIds.has(c.id));
+    bulkDeleteCards(Array.from(selectedIds));
+    showToast(`${deletedCards.length} card${deletedCards.length === 1 ? "" : "s"} deleted`, () =>
+      bulkUndoDeleteCards(projectId, deletedCards)
+    );
+    setSelectedIds(new Set());
+  }
 
   function handleDragStart(event: DragStartEvent) {
     dragStartCardsRef.current = cards;
@@ -195,6 +269,28 @@ export function KanbanBoard({
 
   return (
     <div className="flex-1 min-h-0 overflow-x-auto px-4 py-4">
+      <div className="flex items-center justify-end mb-2">
+        <button
+          type="button"
+          onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+          className="font-mono text-[11px] px-2 py-1 rounded-sm border border-border text-text-faint hover:text-text-primary hover:border-border-strong transition-colors"
+        >
+          {selectMode ? "done selecting" : "select"}
+        </button>
+      </div>
+
+      {selectMode && selectedIds.size > 0 && (
+        <BulkActionBar
+          count={selectedIds.size}
+          onMove={handleBulkMove}
+          onSetPriority={handleBulkSetPriority}
+          onAddTag={handleBulkAddTag}
+          onArchive={handleBulkArchive}
+          onDelete={handleBulkDelete}
+          onCancel={exitSelectMode}
+        />
+      )}
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -226,6 +322,11 @@ export function KanbanBoard({
               onArchiveCompleted={
                 column.id === "complete" ? () => setConfirmingArchiveComplete(true) : undefined
               }
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleCardSelection}
+              onStartTimer={startTimer}
+              onStopTimer={stopTimer}
             />
           ))}
         </div>
@@ -262,6 +363,11 @@ export function KanbanBoard({
         initialDueTime={editingCard?.dueTime}
         initialRecurrence={editingCard?.recurrence}
         initialTags={editingCard?.tags}
+        trackedSeconds={editingCard?.trackedSeconds}
+        timerStartedAt={editingCard?.timerStartedAt}
+        onStartTimer={editingCardId ? () => startTimer(editingCardId) : undefined}
+        onStopTimer={editingCardId ? () => stopTimer(editingCardId) : undefined}
+        onResetTimer={editingCardId ? () => resetTimer(editingCardId) : undefined}
         onClose={() => setEditingCardId(null)}
         onSubmit={({ title, description, priority, dueDate, dueTime, recurrence, tags }) => {
           if (editingCardId) {
